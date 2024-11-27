@@ -2,7 +2,7 @@
   "name": "rest-test",
   "displayName": "REST TEST",
   "description": "",
-  "version": "2.0.0",
+  "version": "2.5.0",
   "publisher": "GopherAmol",
   "license": "MIT",
   "repository": {
@@ -19,6 +19,23 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "restApiTester",
+          "title": "REST TEST",
+          "icon": "resources/sidebar-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "restApiTester": [
+        {
+          "id": "restApiTesterView",
+          "name": "API Requests"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "restApiTest.sendRequest",

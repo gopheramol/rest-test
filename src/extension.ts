@@ -2,6 +2,16 @@ import * as vscode from 'vscode';
 import axios from 'axios';
 
 export function activate(context: vscode.ExtensionContext) {
+  // Register view container
+  const restApiContainer = vscode.window.createTreeView('restApiTesterView', {
+    treeDataProvider: new RestApiTreeProvider(),
+    showCollapseAll: true
+  });
+
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider('restApiTesterView', new RestApiTreeProvider())
+  );
+
   let disposable = vscode.commands.registerCommand('restApiTest.sendRequest', async () => {
     const panel = vscode.window.createWebviewPanel(
       'restApiTest',
@@ -72,6 +82,52 @@ export function activate(context: vscode.ExtensionContext) {
   });
 
   context.subscriptions.push(disposable);
+}
+
+// Tree Data Provider for the sidebar
+class RestApiTreeProvider implements vscode.TreeDataProvider<RestApiItem> {
+  private _onDidChangeTreeData: vscode.EventEmitter<RestApiItem | undefined | null | void> = new vscode.EventEmitter<RestApiItem | undefined | null | void>();
+  readonly onDidChangeTreeData: vscode.Event<RestApiItem | undefined | null | void> = this._onDidChangeTreeData.event;
+
+  getTreeItem(element: RestApiItem): vscode.TreeItem {
+    return element;
+  }
+
+  getChildren(element?: RestApiItem): Thenable<RestApiItem[]> {
+    if (element) {
+      return Promise.resolve([]);
+    }
+
+    const items = [
+      new RestApiItem(
+        'New Request',
+        'Send a new API request',
+        vscode.TreeItemCollapsibleState.None,
+        {
+          command: 'restApiTest.sendRequest',
+          title: 'Send Request',
+          arguments: []
+        }
+      )
+    ];
+
+    return Promise.resolve(items);
+  }
+}
+
+// Tree Item class for the sidebar
+class RestApiItem extends vscode.TreeItem {
+  constructor(
+    public readonly label: string,
+    public readonly tooltip: string,
+    public readonly collapsibleState: vscode.TreeItemCollapsibleState,
+    public readonly command?: vscode.Command
+  ) {
+    super(label, collapsibleState);
+    this.tooltip = tooltip;
+  }
+
+  iconPath = new vscode.ThemeIcon('arrow-right');
 }
 
 function getWebviewContent(initialState: any) {
@@ -376,7 +432,7 @@ function getWebviewContent(initialState: any) {
           </div>
 
           <div id="body-section" class="content-section">
-            <textarea id="body" placeholder="{\n  \"key\": \"value\"\n}" rows="10"></textarea>
+            <textarea id="body" placeholder="{\n  \\"key\\": \\"value\\"\n}" rows="10"></textarea>
           </div>
         </div>
 
@@ -414,7 +470,7 @@ function getWebviewContent(initialState: any) {
           queryParamsContainer.innerHTML = '';
           currentState.queryParams.forEach(param => addParamRow('queryParams', param));
           if (currentState.queryParams.length === 0) {
-            addParamRow('queryParams');
+          addParamRow('queryParams');
           }
 
           const headersContainer = document.getElementById('headers');
@@ -471,7 +527,7 @@ function getWebviewContent(initialState: any) {
           container.removeChild(row);
           
           if (container.children.length === 0) {
-          addParamRow(container.id);
+            addParamRow(container.id);
           }
           
           if (container.id === 'queryParams') {
