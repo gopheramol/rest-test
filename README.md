@@ -102,7 +102,7 @@ Currently, this extension doesn't require any additional settings. All functiona
 
 ## Known Issues
 
-Please report any issues on the [GitHub repository](https://github.com/yourusername/rest-test/issues).
+Please report any issues on the [GitHub repository](https://github.com/gopheramol/rest-test/issues).
 
 ## Release Notes
 
