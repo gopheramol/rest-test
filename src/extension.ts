@@ -9,11 +9,10 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.ViewColumn.One,
       {
         enableScripts: true,
-        retainContextWhenHidden: true // Keep the webview's content loaded when hidden
+        retainContextWhenHidden: true
       }
     );
 
-    // Get the stored state
     const storedState = context.globalState.get('restApiTesterState', {
       method: 'GET',
       url: '',
@@ -27,14 +26,12 @@ export function activate(context: vscode.ExtensionContext) {
     panel.webview.onDidReceiveMessage(async (message) => {
       switch (message.type) {
         case 'saveState':
-          // Save the current state
           await context.globalState.update('restApiTesterState', message.state);
           return;
 
         case 'sendRequest':
           const { method, url, body, headers, queryParams } = message;
           try {
-            // Convert query params to URL search params
             const urlObj = new URL(url);
             if (queryParams) {
               Object.entries(queryParams).forEach(([key, value]) => {
@@ -84,158 +81,237 @@ function getWebviewContent(initialState: any) {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>REST API</title>
+      <title>REST API Tester</title>
       <style>
         :root {
-          --blue-500: #0066FF;
-          --blue-600: #0055D4;
-          --gray-50: #F9FAFB;
-          --gray-100: #F3F4F6;
-          --gray-200: #E5E7EB;
-          --gray-300: #D1D5DB;
-          --gray-700: #374151;
-          --gray-800: #1F2937;
-          --green-100: #DCFCE7;
-          --green-500: #22C55E;
-          --red-100: #FEE2E2;
-          --red-500: #EF4444;
+          --primary: #2563eb;
+          --primary-dark: #1d4ed8;
+          --success: #22c55e;
+          --error: #ef4444;
+          --gray-50: #f8fafc;
+          --gray-100: #f1f5f9;
+          --gray-200: #e2e8f0;
+          --gray-300: #cbd5e1;
+          --gray-400: #94a3b8;
+          --gray-500: #64748b;
+          --gray-600: #475569;
+          --gray-700: #334155;
+          --gray-800: #1e293b;
+          --gray-900: #0f172a;
+          --radius-sm: 4px;
           --radius: 8px;
+          --radius-lg: 12px;
+          --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+          --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+          --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
         }
 
         body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          margin: 0;
-          padding: 2rem;
-          background: white;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+          line-height: 1.5;
+          background: var(--gray-50);
           color: var(--gray-800);
-        }
-
-        .header {
-          text-align: center;
-          margin-bottom: 2rem;
-        }
-
-        .header h1 {
-          color: var(--blue-500);
-          font-size: 2rem;
-          margin: 0;
+          padding: 1rem;
         }
 
         .form-container {
-          max-width: 800px;
+          max-width: 1200px;
           margin: 0 auto;
+          background: white;
+          border-radius: var(--radius-lg);
+          box-shadow: var(--shadow-md);
+          overflow: hidden;
+        }
+
+        .request-row {
+          display: grid;
+          grid-template-columns: 120px 1fr auto;
+          gap: 0.5rem;
+          padding: 1rem;
           background: var(--gray-50);
-          padding: 2rem;
-          border-radius: var(--radius);
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          border-bottom: 1px solid var(--gray-200);
+          align-items: center;
         }
 
-        .form-group {
-          margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-          display: block;
-          font-weight: 500;
-          margin-bottom: 0.5rem;
-        }
-
-        select, input, textarea {
+        select,
+        input,
+        textarea {
           width: 100%;
-          padding: 0.75rem;
+          padding: 0.625rem 0.875rem;
           border: 1px solid var(--gray-200);
           border-radius: var(--radius);
           background: white;
+          color: var(--gray-800);
           font-size: 0.875rem;
-          font-family: inherit;
+          line-height: 1.25rem;
+          transition: all 0.2s;
         }
 
-        select {
-          max-width: 150px;
+        select:hover,
+        input:hover,
+        textarea:hover {
+          border-color: var(--gray-300);
         }
 
-        .params-container {
-          margin-bottom: 1rem;
+        select:focus,
+        input:focus,
+        textarea:focus {
+          outline: none;
+          border-color: var(--primary);
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
-        .param-row {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 0.5rem;
+        .method-select {
+          width: 120px;
+          height: 40px;
+          border-radius: var(--radius);
+          cursor: pointer;
+          font-weight: 500;
         }
 
-        .param-row input {
-          flex: 1;
+        .url-input {
+          height: 40px;
         }
 
-        .param-row button {
-          width: auto;
-          padding: 0.75rem 1rem;
-        }
-
-        .add-row-button {
-          background: var(--green-500);
-        }
-
-        .remove-row-button {
-          background: var(--red-500);
-        }
-
-        button {
-          padding: 0.75rem;
-          background: var(--blue-500);
+        .send-button {
+          height: 40px;
+          padding: 0 1.5rem;
+          background: var(--primary);
           color: white;
           border: none;
           border-radius: var(--radius);
           font-weight: 500;
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: all 0.2s;
+          white-space: nowrap;
         }
 
-        .send-button {
-          width: 100%;
+        .send-button:hover {
+          background: var(--primary-dark);
         }
 
-        button:hover {
-          background: var(--blue-600);
-        }
-
-        button:disabled {
+        .send-button:disabled {
           opacity: 0.7;
           cursor: not-allowed;
         }
 
-        .response-container {
-          margin-top: 1.5rem;
+        .tabs {
+          display: flex;
+          gap: 1rem;
+          padding: 0.5rem 1rem 0;
+          border-bottom: 1px solid var(--gray-200);
+          background: var(--gray-50);
         }
 
-        .response-box {
-          background: var(--green-100);
+        .tab {
+          padding: 0.75rem 1.5rem;
+          color: var(--gray-600);
+          font-weight: 500;
+          cursor: pointer;
+          border-bottom: 2px solid transparent;
+          transition: all 0.2s;
+          user-select: none;
+        }
+
+        .tab:hover {
+          color: var(--primary);
+        }
+
+        .tab.active {
+          color: var(--primary);
+          border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+          padding: 1.5rem;
+        }
+
+        .content-section {
+          display: none;
+        }
+
+        .content-section.active {
+          display: block;
+        }
+
+        .param-row {
+          display: grid;
+          grid-template-columns: 1fr 1fr auto;
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+          align-items: center;
+        }
+
+        .add-param-button {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.5rem 1rem;
+          color: var(--primary);
+          background: transparent;
+          border: 1px dashed var(--primary);
+          border-radius: var(--radius);
+          font-size: 0.875rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .add-param-button:hover {
+          background: var(--gray-50);
+        }
+
+        .remove-param-button {
+          padding: 0.5rem;
+          color: white;
+          background: var(--error);
+          border: none;
+          border-radius: var(--radius);
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .remove-param-button:hover {
+          opacity: 0.9;
+        }
+
+        .response-container {
+          margin-top: 1rem;
+          border: 1px solid var(--gray-200);
           border-radius: var(--radius);
           overflow: hidden;
         }
 
         .response-header {
           padding: 0.75rem 1rem;
-          background: var(--green-500);
-          color: white;
+          background: var(--gray-50);
+          border-bottom: 1px solid var(--gray-200);
           font-weight: 500;
-        }
-
-        .response-error {
-          background: var(--red-100);
-        }
-
-        .response-error .response-header {
-          background: var(--red-500);
         }
 
         .response-body {
           padding: 1rem;
+          background: white;
           font-family: 'Menlo', Monaco, 'Courier New', monospace;
           font-size: 0.875rem;
           line-height: 1.5;
           white-space: pre-wrap;
+          overflow-x: auto;
+        }
+
+        .response-success .response-header {
+          background: var(--success);
+          color: white;
+        }
+
+        .response-error .response-header {
+          background: var(--error);
+          color: white;
         }
 
         .loading {
@@ -243,78 +319,71 @@ function getWebviewContent(initialState: any) {
           align-items: center;
           justify-content: center;
           padding: 2rem;
-          color: var(--gray-700);
+          color: var(--gray-500);
+          gap: 0.5rem;
         }
 
         .loading::after {
           content: '';
           width: 1rem;
           height: 1rem;
-          border: 2px solid var(--gray-300);
-          border-top-color: var(--blue-500);
+          border: 2px solid var(--gray-200);
+          border-top-color: var(--primary);
           border-radius: 50%;
           animation: spin 0.6s linear infinite;
-          margin-left: 0.5rem;
         }
 
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
-
-        .section-title {
-          font-weight: 600;
-          margin-bottom: 1rem;
-          color: var(--gray-700);
-        }
       </style>
     </head>
     <body>
-      <div class="header">
-        <h1>REST TEST</h1>
-      </div>
-      
       <div class="form-container">
-        <div class="form-group">
-          <label for="method">Request Method</label>
-          <select id="method">
+        <div class="request-row">
+          <select id="method" class="method-select">
             <option value="GET">GET</option>
             <option value="POST">POST</option>
             <option value="PUT">PUT</option>
             <option value="DELETE">DELETE</option>
             <option value="PATCH">PATCH</option>
           </select>
+          <input type="text" id="url" class="url-input" placeholder="Enter request URL" />
+          <button onclick="sendRequest()" id="sendButton" class="send-button">
+            Send
+          </button>
         </div>
 
-        <div class="form-group">
-          <label for="url">Request URL</label>
-          <input type="text" id="url" placeholder="https://api.example.com/endpoint" />
+        <div class="tabs">
+          <div class="tab active" data-tab="params">Params</div>
+          <div class="tab" data-tab="headers">Headers</div>
+          <div class="tab" data-tab="body">Body</div>
         </div>
 
-        <div class="form-group">
-          <div class="section-title">Query Parameters</div>
-          <div id="queryParams" class="params-container">
+        <div class="tab-content">
+          <div id="params-section" class="content-section active">
+            <div id="queryParams" class="param-rows"></div>
+            <button class="add-param-button" onclick="addParamRow('queryParams')">
+              + Add Parameter
+            </button>
           </div>
-          <button class="add-row-button" onclick="addParamRow('queryParams')">Add Query Parameter</button>
-        </div>
 
-        <div class="form-group">
-          <div class="section-title">Headers</div>
-          <div id="headers" class="params-container">
+          <div id="headers-section" class="content-section">
+            <div id="headers" class="param-rows"></div>
+            <button class="add-param-button" onclick="addParamRow('headers')">
+              + Add Header
+            </button>
           </div>
-          <button class="add-row-button" onclick="addParamRow('headers')">Add Header</button>
+
+          <div id="body-section" class="content-section">
+            <textarea id="body" placeholder="{\n  \"key\": \"value\"\n}" rows="10"></textarea>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="body">Request Body (JSON)</label>
-          <textarea id="body" placeholder="{\n  \"key\": \"value\"\n}" rows="5"></textarea>
-        </div>
-
-        <button onclick="sendRequest()" id="sendButton" class="send-button">Send Request</button>
-
-        <div class="response-container" id="responseContainer" style="display: none;">
-          <div class="response-box" id="responseBox">
-            <div class="response-header" id="responseHeader"></div>
-            <div class="response-body" id="responseBody"></div>
+        <div id="responseContainer" style="display: none;">
+          <div id="responseBox" class="response-container">
+            <div id="responseHeader" class="response-header"></div>
+            <div id="responseBody" class="response-body"></div>
           </div>
         </div>
       </div>
@@ -324,13 +393,23 @@ function getWebviewContent(initialState: any) {
         const initialState = ${JSON.stringify(initialState)};
         let currentState = { ...initialState };
 
-        // Initialize the form with saved state
+        function switchTab(tabId) {
+          document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+          });
+          document.querySelectorAll('.content-section').forEach(section => {
+            section.classList.remove('active');
+          });
+          
+          document.querySelector(\`[data-tab="\${tabId}"]\`).classList.add('active');
+          document.getElementById(\`\${tabId}-section\`).classList.add('active');
+        }
+
         function initializeForm() {
           document.getElementById('method').value = currentState.method;
           document.getElementById('url').value = currentState.url;
           document.getElementById('body').value = currentState.body;
 
-          // Initialize query parameters
           const queryParamsContainer = document.getElementById('queryParams');
           queryParamsContainer.innerHTML = '';
           currentState.queryParams.forEach(param => addParamRow('queryParams', param));
@@ -338,7 +417,6 @@ function getWebviewContent(initialState: any) {
             addParamRow('queryParams');
           }
 
-          // Initialize headers
           const headersContainer = document.getElementById('headers');
           headersContainer.innerHTML = '';
           currentState.headers.forEach(header => addParamRow('headers', header));
@@ -347,7 +425,6 @@ function getWebviewContent(initialState: any) {
           }
         }
 
-        // Save current state
         function saveState() {
           currentState = {
             method: document.getElementById('method').value,
@@ -363,27 +440,26 @@ function getWebviewContent(initialState: any) {
           });
         }
 
-        // Add input event listeners to all form elements
-        function addStateListeners() {
-          document.getElementById('method').addEventListener('change', saveState);
-          document.getElementById('url').addEventListener('input', saveState);
-          document.getElementById('body').addEventListener('input', saveState);
-        }
-
         function addParamRow(containerId, initialValue = { key: '', value: '' }) {
           const container = document.getElementById(containerId);
           const row = document.createElement('div');
           row.className = 'param-row';
+          
           row.innerHTML = \`
             <input type="text" placeholder="Key" value="\${initialValue.key}" />
             <input type="text" placeholder="Value" value="\${initialValue.value}" />
-            <button class="remove-row-button" onclick="removeParamRow(this)">×</button>
+            <button class="remove-param-button" onclick="removeParamRow(this)">×</button>
           \`;
 
-          // Add input listeners to new row
           const inputs = row.getElementsByTagName('input');
           for (const input of inputs) {
-            input.addEventListener('input', saveState);
+            input.addEventListener('input', () => {
+              if (containerId === 'queryParams') {
+                updateURLWithParams();
+              } else {
+                saveState();
+              }
+            });
           }
 
           container.appendChild(row);
@@ -392,8 +468,15 @@ function getWebviewContent(initialState: any) {
         function removeParamRow(button) {
           const row = button.parentElement;
           const container = row.parentElement;
-          if (container.children.length > 1) {
-            container.removeChild(row);
+          container.removeChild(row);
+          
+          if (container.children.length === 0) {
+          addParamRow(container.id);
+          }
+          
+          if (container.id === 'queryParams') {
+            updateURLWithParams();
+          } else {
             saveState();
           }
         }
@@ -432,6 +515,63 @@ function getWebviewContent(initialState: any) {
           return params;
         }
 
+        function updateURLWithParams() {
+          const urlInput = document.getElementById('url');
+          const baseURL = urlInput.value.split('?')[0];
+          const queryParams = collectParamsArray('queryParams');
+          
+          if (queryParams.length > 0 && queryParams.some(param => param.key)) {
+            const searchParams = new URLSearchParams();
+            queryParams.forEach(param => {
+              if (param.key) {
+                searchParams.append(param.key, param.value);
+              }
+            });
+            const queryString = searchParams.toString();
+            urlInput.value = queryString ? \`\${baseURL}?\${queryString}\` : baseURL;
+          } else {
+            urlInput.value = baseURL;
+          }
+          
+          saveState();
+        }
+
+        function showLoading() {
+          const responseContainer = document.getElementById('responseContainer');
+          const responseBox = document.getElementById('responseBox');
+          const responseHeader = document.getElementById('responseHeader');
+          const responseBody = document.getElementById('responseBody');
+          
+          responseContainer.style.display = 'block';
+          responseBox.className = 'response-container';
+          responseHeader.textContent = 'Sending request...';
+          responseBody.innerHTML = '<div class="loading">Processing request</div>';
+        }
+
+        function showError(message) {
+          const responseContainer = document.getElementById('responseContainer');
+          const responseBox = document.getElementById('responseBox');
+          const responseHeader = document.getElementById('responseHeader');
+          const responseBody = document.getElementById('responseBody');
+
+          responseContainer.style.display = 'block';
+          responseBox.className = 'response-container response-error';
+          responseHeader.textContent = 'Error';
+          responseBody.textContent = message;
+        }
+
+        function showResponse(data, status, statusText) {
+          const responseContainer = document.getElementById('responseContainer');
+          const responseBox = document.getElementById('responseBox');
+          const responseHeader = document.getElementById('responseHeader');
+          const responseBody = document.getElementById('responseBody');
+
+          responseContainer.style.display = 'block';
+          responseBox.className = 'response-container response-success';
+          responseHeader.textContent = \`Status: \${status} - \${statusText}\`;
+          responseBody.textContent = formatJSON(data);
+        }
+
         function formatJSON(json) {
           try {
             const obj = typeof json === 'string' ? JSON.parse(json) : json;
@@ -447,12 +587,6 @@ function getWebviewContent(initialState: any) {
           const body = document.getElementById('body').value;
           const headers = collectParams('headers');
           const queryParams = collectParams('queryParams');
-
-          const responseContainer = document.getElementById('responseContainer');
-          const responseBox = document.getElementById('responseBox');
-          const responseHeader = document.getElementById('responseHeader');
-          const responseBody = document.getElementById('responseBody');
-          const sendButton = document.getElementById('sendButton');
 
           if (!url) {
             showError('Please enter a URL');
@@ -475,11 +609,9 @@ function getWebviewContent(initialState: any) {
             }
           }
 
+          const sendButton = document.getElementById('sendButton');
           sendButton.disabled = true;
-          responseContainer.style.display = 'block';
-          responseBox.className = 'response-box';
-          responseHeader.textContent = 'Sending request...';
-          responseBody.innerHTML = '<div class="loading"></div>';
+          showLoading();
 
           vscode.postMessage({ 
             type: 'sendRequest',
@@ -491,44 +623,38 @@ function getWebviewContent(initialState: any) {
           });
         }
 
-        function showError(message) {
-          const responseContainer = document.getElementById('responseContainer');
-          const responseBox = document.getElementById('responseBox');
-          const responseHeader = document.getElementById('responseHeader');
-          const responseBody = document.getElementById('responseBody');
+        // Add event listeners
+        document.querySelectorAll('.tab').forEach(tab => {
+          tab.addEventListener('click', () => {
+            switchTab(tab.getAttribute('data-tab'));
+          });
+        });
 
-          responseContainer.style.display = 'block';
-          responseBox.className = 'response-box response-error';
-          responseHeader.textContent = 'Error';
-          responseBody.textContent = message;
-        }
+        document.getElementById('method').addEventListener('change', saveState);
+        document.getElementById('url').addEventListener('input', (e) => {
+          if (!e.target.value.includes('?')) {
+            updateURLWithParams();
+          }
+          saveState();
+        });
+        document.getElementById('body').addEventListener('input', saveState);
 
         window.addEventListener('message', event => {
           const message = event.data;
-          const responseContainer = document.getElementById('responseContainer');
-          const responseBox = document.getElementById('responseBox');
-          const responseHeader = document.getElementById('responseHeader');
-          const responseBody = document.getElementById('responseBody');
           const sendButton = document.getElementById('sendButton');
-
           sendButton.disabled = false;
-          responseContainer.style.display = 'block';
 
           if (message.type === 'response') {
-            responseBox.className = 'response-box';
-            responseHeader.textContent = \`Status: \${message.status} \${message.statusText}\`;
-            responseBody.textContent = formatJSON(message.data);
+            showResponse(message.data, message.status, message.statusText);
           } else if (message.type === 'error') {
-            responseBox.className = 'response-box response-error';
-            responseHeader.textContent = 'Error';
-            responseBody.textContent = message.message;
+            showError(message.message);
           }
         });
 
-        // Initialize the form and add listeners when the page loads
+        // Initialize the form when the page loads
         document.addEventListener('DOMContentLoaded', () => {
           initializeForm();
-          addStateListeners();
+          updateURLWithParams();
         });
       </script>
     </body>
