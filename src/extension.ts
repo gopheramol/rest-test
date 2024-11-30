@@ -42,7 +42,17 @@ export function activate(context: vscode.ExtensionContext) {
         case 'copyToClipboard':
           await vscode.env.clipboard.writeText(message.text);
           panel.webview.postMessage({
-            type: 'copySuccess'
+            type: 'copySuccess',
+            source: 'response'
+          });
+          return;
+
+        case 'copyAsCurl':
+          const curlCommand = generateCurlCommand(message);
+          await vscode.env.clipboard.writeText(curlCommand);
+          panel.webview.postMessage({
+            type: 'copySuccess',
+            source: 'curl'
           });
           return;
 
@@ -91,6 +101,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposable);
 }
 
+// Tree Data Provider for the sidebar
 class RestApiTreeProvider implements vscode.TreeDataProvider<RestApiItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<RestApiItem | undefined | null | void> = new vscode.EventEmitter<RestApiItem | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<RestApiItem | undefined | null | void> = this._onDidChangeTreeData.event;
@@ -121,6 +132,7 @@ class RestApiTreeProvider implements vscode.TreeDataProvider<RestApiItem> {
   }
 }
 
+// Tree Item class for the sidebar
 class RestApiItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
@@ -133,6 +145,33 @@ class RestApiItem extends vscode.TreeItem {
   }
 
   iconPath = new vscode.ThemeIcon('arrow-right');
+}
+
+function generateCurlCommand(request: any): string {
+  const { method, url, headers, body } = request;
+  let curlCmd = `curl -X ${method} '${url}'`;
+
+  // Add headers
+  if (headers) {
+    Object.entries(headers).forEach(([key, value]) => {
+      if (key && value) {
+        curlCmd += `\n  -H '${key}: ${value}'`;
+      }
+    });
+  }
+
+  // Add request body if present
+  if (body) {
+    try {
+      // Ensure the body is properly formatted JSON
+      const formattedBody = JSON.stringify(JSON.parse(body));
+      curlCmd += `\n  -d '${formattedBody}'`;
+    } catch {
+      curlCmd += `\n  -d '${body}'`;
+    }
+  }
+
+  return curlCmd;
 }
 
 function getWebviewContent(initialState: any) {
@@ -378,7 +417,13 @@ function getWebviewContent(initialState: any) {
           color: white;
         }
 
-        .copy-button {
+        .button-group {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .copy-button,
+        .copy-as-curl {
           padding: 0.25rem 0.75rem;
           background: transparent;
           color: inherit;
@@ -392,11 +437,13 @@ function getWebviewContent(initialState: any) {
           gap: 0.375rem;
         }
 
-        .copy-button:hover {
+        .copy-button:hover,
+        .copy-as-curl:hover {
           background: rgba(255, 255, 255, 0.1);
         }
 
-        .copy-button.success {
+        .copy-button.success,
+        .copy-as-curl.success {
           background: var(--success);
           color: white;
           border-color: var(--success);
@@ -440,6 +487,7 @@ function getWebviewContent(initialState: any) {
           border-radius: var(--radius);
           animation: fade 2s ease-in-out;
           pointer-events: none;
+          z-index: 1000;
         }
       </style>
     </head>
@@ -479,6 +527,7 @@ function getWebviewContent(initialState: any) {
               + Add Header
             </button>
           </div>
+
           <div id="body-section" class="content-section">
             <textarea id="body" placeholder="{\n  \\"key\\": \\"value\\"\n}" rows="10"></textarea>
           </div>
@@ -488,9 +537,14 @@ function getWebviewContent(initialState: any) {
           <div id="responseBox" class="response-container">
             <div id="responseHeader" class="response-header">
               <span id="responseStatus"></span>
-              <button id="copyButton" class="copy-button" onclick="copyResponse()">
-                Copy Response
-              </button>
+              <div class="button-group">
+                <button id="copyAsCurlButton" class="copy-as-curl" onclick="copyAsCurl()">
+                  Copy as cURL
+                </button>
+                <button id="copyButton" class="copy-button" onclick="copyResponse()">
+                  Copy Response
+                </button>
+              </div>
             </div>
             <div id="responseBody" class="response-body"></div>
           </div>
@@ -663,14 +717,18 @@ function getWebviewContent(initialState: any) {
           const responseStatus = document.getElementById('responseStatus');
           const responseBody = document.getElementById('responseBody');
           const copyButton = document.getElementById('copyButton');
+          const copyAsCurlButton = document.getElementById('copyAsCurlButton');
 
           responseContainer.style.display = 'block';
           responseBox.className = 'response-container response-success';
           responseStatus.textContent = \`Status: \${status} - \${statusText}\`;
           responseBody.textContent = formatJSON(data);
           copyButton.style.display = 'block';
+          copyAsCurlButton.style.display = 'block';
           copyButton.className = 'copy-button';
+          copyAsCurlButton.className = 'copy-as-curl';
           copyButton.textContent = 'Copy Response';
+          copyAsCurlButton.textContent = 'Copy as cURL';
         }
 
         function showError(message) {
@@ -679,12 +737,14 @@ function getWebviewContent(initialState: any) {
           const responseStatus = document.getElementById('responseStatus');
           const responseBody = document.getElementById('responseBody');
           const copyButton = document.getElementById('copyButton');
+          const copyAsCurlButton = document.getElementById('copyAsCurlButton');
 
           responseContainer.style.display = 'block';
           responseBox.className = 'response-container response-error';
           responseStatus.textContent = 'Error';
           responseBody.textContent = message;
           copyButton.style.display = 'none';
+          copyAsCurlButton.style.display = 'none';
         }
 
         function formatJSON(json) {
@@ -698,11 +758,24 @@ function getWebviewContent(initialState: any) {
 
         function copyResponse() {
           const responseBody = document.getElementById('responseBody');
-          const copyButton = document.getElementById('copyButton');
-          
           vscode.postMessage({
             type: 'copyToClipboard',
             text: responseBody.textContent
+          });
+        }
+
+        function copyAsCurl() {
+          const method = document.getElementById('method').value;
+          const url = document.getElementById('url').value;
+          const body = document.getElementById('body').value;
+          const headers = collectParams('headers');
+          
+          vscode.postMessage({
+            type: 'copyAsCurl',
+            method,
+            url,
+            headers,
+            body
           });
         }
 
@@ -774,18 +847,25 @@ function getWebviewContent(initialState: any) {
           } else if (message.type === 'error') {
             showError(message.message);
           } else if (message.type === 'copySuccess') {
-            const copyButton = document.getElementById('copyButton');
-            copyButton.className = 'copy-button success';
-            copyButton.textContent = 'Copied!';
+            const buttonId = message.source === 'curl' ? 'copyAsCurlButton' : 'copyButton';
+            const button = document.getElementById(buttonId);
+            const originalClass = message.source === 'curl' ? 'copy-as-curl' : 'copy-button';
+            
+            button.className = \`\${originalClass} success\`;
+            button.textContent = 'Copied!';
 
             const feedback = document.createElement('div');
             feedback.className = 'copy-feedback';
-            feedback.textContent = 'Response copied to clipboard';
+            feedback.textContent = message.source === 'curl' ? 
+              'cURL command copied to clipboard' : 
+              'Response copied to clipboard';
             document.body.appendChild(feedback);
 
             setTimeout(() => {
-              copyButton.className = 'copy-button';
-              copyButton.textContent = 'Copy Response';
+              button.className = originalClass;
+              button.textContent = message.source === 'curl' ? 
+                'Copy as cURL' : 
+                'Copy Response';
             }, 2000);
 
             setTimeout(() => {
