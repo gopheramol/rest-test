@@ -7,7 +7,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/gopher-amol/rest-test"
+    "url": "https://github.com/gopheramol/rest-test"
   },
   "engines": {
     "vscode": "^1.60.0"
