@@ -39,6 +39,13 @@ export function activate(context: vscode.ExtensionContext) {
           await context.globalState.update('restApiTesterState', message.state);
           return;
 
+        case 'copyToClipboard':
+          await vscode.env.clipboard.writeText(message.text);
+          panel.webview.postMessage({
+            type: 'copySuccess'
+          });
+          return;
+
         case 'sendRequest':
           const { method, url, body, headers, queryParams } = message;
           try {
@@ -84,7 +91,6 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposable);
 }
 
-// Tree Data Provider for the sidebar
 class RestApiTreeProvider implements vscode.TreeDataProvider<RestApiItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<RestApiItem | undefined | null | void> = new vscode.EventEmitter<RestApiItem | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<RestApiItem | undefined | null | void> = this._onDidChangeTreeData.event;
@@ -115,7 +121,6 @@ class RestApiTreeProvider implements vscode.TreeDataProvider<RestApiItem> {
   }
 }
 
-// Tree Item class for the sidebar
 class RestApiItem extends vscode.TreeItem {
   constructor(
     public readonly label: string,
@@ -348,6 +353,9 @@ function getWebviewContent(initialState: any) {
           background: var(--gray-50);
           border-bottom: 1px solid var(--gray-200);
           font-weight: 500;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
         }
 
         .response-body {
@@ -368,6 +376,30 @@ function getWebviewContent(initialState: any) {
         .response-error .response-header {
           background: var(--error);
           color: white;
+        }
+
+        .copy-button {
+          padding: 0.25rem 0.75rem;
+          background: transparent;
+          color: inherit;
+          border: 1px solid currentColor;
+          border-radius: var(--radius);
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 0.375rem;
+        }
+
+        .copy-button:hover {
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .copy-button.success {
+          background: var(--success);
+          color: white;
+          border-color: var(--success);
         }
 
         .loading {
@@ -391,6 +423,23 @@ function getWebviewContent(initialState: any) {
 
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+
+        @keyframes fade {
+          0%, 100% { opacity: 0; }
+          10%, 90% { opacity: 1; }
+        }
+
+        .copy-feedback {
+          position: fixed;
+          bottom: 1rem;
+          right: 1rem;
+          background: var(--success);
+          color: white;
+          padding: 0.5rem 1rem;
+          border-radius: var(--radius);
+          animation: fade 2s ease-in-out;
+          pointer-events: none;
         }
       </style>
     </head>
@@ -430,7 +479,6 @@ function getWebviewContent(initialState: any) {
               + Add Header
             </button>
           </div>
-
           <div id="body-section" class="content-section">
             <textarea id="body" placeholder="{\n  \\"key\\": \\"value\\"\n}" rows="10"></textarea>
           </div>
@@ -438,7 +486,12 @@ function getWebviewContent(initialState: any) {
 
         <div id="responseContainer" style="display: none;">
           <div id="responseBox" class="response-container">
-            <div id="responseHeader" class="response-header"></div>
+            <div id="responseHeader" class="response-header">
+              <span id="responseStatus"></span>
+              <button id="copyButton" class="copy-button" onclick="copyResponse()">
+                Copy Response
+              </button>
+            </div>
             <div id="responseBody" class="response-body"></div>
           </div>
         </div>
@@ -470,7 +523,7 @@ function getWebviewContent(initialState: any) {
           queryParamsContainer.innerHTML = '';
           currentState.queryParams.forEach(param => addParamRow('queryParams', param));
           if (currentState.queryParams.length === 0) {
-          addParamRow('queryParams');
+            addParamRow('queryParams');
           }
 
           const headersContainer = document.getElementById('headers');
@@ -595,37 +648,43 @@ function getWebviewContent(initialState: any) {
         function showLoading() {
           const responseContainer = document.getElementById('responseContainer');
           const responseBox = document.getElementById('responseBox');
-          const responseHeader = document.getElementById('responseHeader');
+          const responseStatus = document.getElementById('responseStatus');
           const responseBody = document.getElementById('responseBody');
           
           responseContainer.style.display = 'block';
           responseBox.className = 'response-container';
-          responseHeader.textContent = 'Sending request...';
+          responseStatus.textContent = 'Sending request...';
           responseBody.innerHTML = '<div class="loading">Processing request</div>';
-        }
-
-        function showError(message) {
-          const responseContainer = document.getElementById('responseContainer');
-          const responseBox = document.getElementById('responseBox');
-          const responseHeader = document.getElementById('responseHeader');
-          const responseBody = document.getElementById('responseBody');
-
-          responseContainer.style.display = 'block';
-          responseBox.className = 'response-container response-error';
-          responseHeader.textContent = 'Error';
-          responseBody.textContent = message;
         }
 
         function showResponse(data, status, statusText) {
           const responseContainer = document.getElementById('responseContainer');
           const responseBox = document.getElementById('responseBox');
-          const responseHeader = document.getElementById('responseHeader');
+          const responseStatus = document.getElementById('responseStatus');
           const responseBody = document.getElementById('responseBody');
+          const copyButton = document.getElementById('copyButton');
 
           responseContainer.style.display = 'block';
           responseBox.className = 'response-container response-success';
-          responseHeader.textContent = \`Status: \${status} - \${statusText}\`;
+          responseStatus.textContent = \`Status: \${status} - \${statusText}\`;
           responseBody.textContent = formatJSON(data);
+          copyButton.style.display = 'block';
+          copyButton.className = 'copy-button';
+          copyButton.textContent = 'Copy Response';
+        }
+
+        function showError(message) {
+          const responseContainer = document.getElementById('responseContainer');
+          const responseBox = document.getElementById('responseBox');
+          const responseStatus = document.getElementById('responseStatus');
+          const responseBody = document.getElementById('responseBody');
+          const copyButton = document.getElementById('copyButton');
+
+          responseContainer.style.display = 'block';
+          responseBox.className = 'response-container response-error';
+          responseStatus.textContent = 'Error';
+          responseBody.textContent = message;
+          copyButton.style.display = 'none';
         }
 
         function formatJSON(json) {
@@ -635,6 +694,16 @@ function getWebviewContent(initialState: any) {
           } catch {
             return json;
           }
+        }
+
+        function copyResponse() {
+          const responseBody = document.getElementById('responseBody');
+          const copyButton = document.getElementById('copyButton');
+          
+          vscode.postMessage({
+            type: 'copyToClipboard',
+            text: responseBody.textContent
+          });
         }
 
         function sendRequest() {
@@ -704,6 +773,24 @@ function getWebviewContent(initialState: any) {
             showResponse(message.data, message.status, message.statusText);
           } else if (message.type === 'error') {
             showError(message.message);
+          } else if (message.type === 'copySuccess') {
+            const copyButton = document.getElementById('copyButton');
+            copyButton.className = 'copy-button success';
+            copyButton.textContent = 'Copied!';
+
+            const feedback = document.createElement('div');
+            feedback.className = 'copy-feedback';
+            feedback.textContent = 'Response copied to clipboard';
+            document.body.appendChild(feedback);
+
+            setTimeout(() => {
+              copyButton.className = 'copy-button';
+              copyButton.textContent = 'Copy Response';
+            }, 2000);
+
+            setTimeout(() => {
+              document.body.removeChild(feedback);
+            }, 2000);
           }
         });
 
