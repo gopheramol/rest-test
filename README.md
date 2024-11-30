@@ -106,7 +106,7 @@ Please report any issues on the [GitHub repository](https://github.com/gopheramo
 
 ## Release Notes
 
-### 0.0.1
+### 2.6.0
 
 Initial release of REST TEST with:
 - Basic HTTP methods support
@@ -114,6 +114,8 @@ Initial release of REST TEST with:
 - JSON body editor
 - Response formatting
 - State persistence
+- Copy Request as cURL
+- Copy JSON Response
 
 ## Contributing
 
