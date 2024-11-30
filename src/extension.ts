@@ -340,9 +340,9 @@ function getWebviewContent(initialState: any) {
           display: block;
         }
 
-        .param-row {
+         .param-row {
           display: grid;
-          grid-template-columns: 1fr 1fr auto;
+          grid-template-columns: 1fr 1fr 40px;
           gap: 0.5rem;
           margin-bottom: 0.5rem;
           align-items: center;
@@ -368,16 +368,33 @@ function getWebviewContent(initialState: any) {
 
         .remove-param-button {
           padding: 0.5rem;
-          color: white;
-          background: var(--error);
-          border: none;
+          min-width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--error);
+          background: transparent;
+          border: 1px solid currentColor;
           border-radius: var(--radius);
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s ease;
+          position: relative;
         }
 
         .remove-param-button:hover {
-          opacity: 0.9;
+          background: var(--error);
+          color: white;
+          border-color: var(--error);
+        }
+
+        .remove-param-button:active {
+          transform: scale(0.95);
+        }
+
+        .remove-param-button svg {
+          width: 16px;
+          height: 16px;
         }
 
         .response-container {
@@ -611,7 +628,11 @@ function getWebviewContent(initialState: any) {
           row.innerHTML = \`
             <input type="text" placeholder="Key" value="\${initialValue.key}" />
             <input type="text" placeholder="Value" value="\${initialValue.value}" />
-            <button class="remove-param-button" onclick="removeParamRow(this)">×</button>
+            <button class="remove-param-button" onclick="removeParamRow(this)" aria-label="Delete parameter">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
           \`;
 
           const inputs = row.getElementsByTagName('input');
