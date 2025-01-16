@@ -68,18 +68,22 @@ export function activate(context: vscode.ExtensionContext) {
               });
             }
 
+            const startTime = Date.now();
             const response = await axios({
               method: method.toLowerCase(),
               url: urlObj.toString(),
               data: body ? JSON.parse(body) : undefined,
               headers: headers || {},
             });
+            const endTime = Date.now();
+            const responseTime = endTime - startTime;
 
             panel.webview.postMessage({
               type: 'response',
               status: response.status,
               statusText: response.statusText,
               data: JSON.stringify(response.data, null, 2),
+              responseTime: responseTime
             });
           } catch (error) {
             let errorMessage = 'An unknown error occurred.';
@@ -173,6 +177,8 @@ function generateCurlCommand(request: any): string {
 
   return curlCmd;
 }
+
+export function deactivate() {}
 
 function getWebviewContent(initialState: any) {
   return `
@@ -340,7 +346,7 @@ function getWebviewContent(initialState: any) {
           display: block;
         }
 
-         .param-row {
+        .param-row {
           display: grid;
           grid-template-columns: 1fr 1fr 40px;
           gap: 0.5rem;
@@ -414,6 +420,30 @@ function getWebviewContent(initialState: any) {
           align-items: center;
         }
 
+        .response-status {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .response-time {
+          font-size: 0.875rem;
+          color: var(--gray-600);
+          padding: 0.25rem 0.75rem;
+          background: var(--gray-100);
+          border-radius: var(--radius);
+        }
+
+        .response-success .response-time {
+          color: white;
+          background: rgba(255, 255, 255, 0.2);
+        }
+
+        .response-error .response-time {
+          color: white;
+          background: rgba(255, 255, 255, 0.2);
+        }
+
         .response-body {
           padding: 1rem;
           background: white;
@@ -441,7 +471,7 @@ function getWebviewContent(initialState: any) {
 
         .copy-button,
         .copy-as-curl {
-          padding: 0.25rem 0.75rem;
+        padding: 0.25rem 0.75rem;
           background: transparent;
           color: inherit;
           border: 1px solid currentColor;
@@ -553,7 +583,10 @@ function getWebviewContent(initialState: any) {
         <div id="responseContainer" style="display: none;">
           <div id="responseBox" class="response-container">
             <div id="responseHeader" class="response-header">
-              <span id="responseStatus"></span>
+              <div class="response-status">
+                <span id="responseStatus"></span>
+                <span id="responseTime" class="response-time"></span>
+              </div>
               <div class="button-group">
                 <button id="copyAsCurlButton" class="copy-as-curl" onclick="copyAsCurl()">
                   Copy as cURL
@@ -665,6 +698,13 @@ function getWebviewContent(initialState: any) {
           }
         }
 
+        function formatResponseTime(ms) {
+          if (ms < 1000) {
+            return \`\${ms}ms\`;
+          }
+          return \`\${(ms / 1000).toFixed(2)}s\`;
+        }
+
         function collectParamsArray(containerId) {
           const params = [];
           const container = document.getElementById(containerId);
@@ -725,17 +765,20 @@ function getWebviewContent(initialState: any) {
           const responseBox = document.getElementById('responseBox');
           const responseStatus = document.getElementById('responseStatus');
           const responseBody = document.getElementById('responseBody');
+          const responseTimeEl = document.getElementById('responseTime');
           
           responseContainer.style.display = 'block';
           responseBox.className = 'response-container';
           responseStatus.textContent = 'Sending request...';
+          responseTimeEl.textContent = '';
           responseBody.innerHTML = '<div class="loading">Processing request</div>';
         }
 
-        function showResponse(data, status, statusText) {
+        function showResponse(data, status, statusText, responseTime) {
           const responseContainer = document.getElementById('responseContainer');
           const responseBox = document.getElementById('responseBox');
           const responseStatus = document.getElementById('responseStatus');
+          const responseTimeEl = document.getElementById('responseTime');
           const responseBody = document.getElementById('responseBody');
           const copyButton = document.getElementById('copyButton');
           const copyAsCurlButton = document.getElementById('copyAsCurlButton');
@@ -743,6 +786,7 @@ function getWebviewContent(initialState: any) {
           responseContainer.style.display = 'block';
           responseBox.className = 'response-container response-success';
           responseStatus.textContent = \`Status: \${status} - \${statusText}\`;
+          responseTimeEl.textContent = formatResponseTime(responseTime);
           responseBody.textContent = formatJSON(data);
           copyButton.style.display = 'block';
           copyAsCurlButton.style.display = 'block';
@@ -756,6 +800,7 @@ function getWebviewContent(initialState: any) {
           const responseContainer = document.getElementById('responseContainer');
           const responseBox = document.getElementById('responseBox');
           const responseStatus = document.getElementById('responseStatus');
+          const responseTimeEl = document.getElementById('responseTime');
           const responseBody = document.getElementById('responseBody');
           const copyButton = document.getElementById('copyButton');
           const copyAsCurlButton = document.getElementById('copyAsCurlButton');
@@ -763,6 +808,7 @@ function getWebviewContent(initialState: any) {
           responseContainer.style.display = 'block';
           responseBox.className = 'response-container response-error';
           responseStatus.textContent = 'Error';
+          responseTimeEl.textContent = '';
           responseBody.textContent = message;
           copyButton.style.display = 'none';
           copyAsCurlButton.style.display = 'none';
@@ -864,15 +910,18 @@ function getWebviewContent(initialState: any) {
           sendButton.disabled = false;
 
           if (message.type === 'response') {
-            showResponse(message.data, message.status, message.statusText);
+          showResponse(message.data, message.status, message.statusText, message.responseTime);
           } else if (message.type === 'error') {
             showError(message.message);
           } else if (message.type === 'copySuccess') {
             const buttonId = message.source === 'curl' ? 'copyAsCurlButton' : 'copyButton';
             const button = document.getElementById(buttonId);
-            const originalClass = message.source === 'curl' ? 'copy-as-curl' : 'copy-button';
             
-            button.className = \`\${originalClass} success\`;
+            if (message.source === 'curl') {
+              button.className = 'copy-as-curl success';
+            } else {
+              button.className = 'copy-button success';
+            }
             button.textContent = 'Copied!';
 
             const feedback = document.createElement('div');
@@ -883,10 +932,13 @@ function getWebviewContent(initialState: any) {
             document.body.appendChild(feedback);
 
             setTimeout(() => {
-              button.className = originalClass;
-              button.textContent = message.source === 'curl' ? 
-                'Copy as cURL' : 
-                'Copy Response';
+              if (message.source === 'curl') {
+                button.className = 'copy-as-curl';
+                button.textContent = 'Copy as cURL';
+              } else {
+                button.className = 'copy-button';
+                button.textContent = 'Copy Response';
+              }
             }, 2000);
 
             setTimeout(() => {
@@ -905,5 +957,3 @@ function getWebviewContent(initialState: any) {
     </html>
   `;
 }
-
-export function deactivate() {}
