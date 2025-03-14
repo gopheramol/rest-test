@@ -2,11 +2,16 @@ import * as vscode from 'vscode';
 import axios from 'axios';
 import { getWebviewContent } from '../webviews/apiRequestWebview';
 import { generateCurlCommand } from '../utils/curlGenerator';
+import { HistoryService } from '../services/HistoryService';
+import { RestApiTreeProvider } from '../providers/RestApiTreeProvider';
 
 /**
  * Handler for the sendRequest command
  */
-export function registerSendRequestCommand(context: vscode.ExtensionContext): vscode.Disposable {
+export function registerSendRequestCommand(
+  context: vscode.ExtensionContext,
+  treeProvider: RestApiTreeProvider
+): vscode.Disposable {
   return vscode.commands.registerCommand('restApiTest.sendRequest', async () => {
     const panel = vscode.window.createWebviewPanel(
       'restApiTest',
@@ -51,7 +56,21 @@ export function registerSendRequestCommand(context: vscode.ExtensionContext): vs
           });
           return;
 
-        case 'sendRequest':
+        case 'saveToHistory': {
+          const { method, url, body, headers, queryParams, name } = message.state;
+          await HistoryService.addToHistory(context, {
+            name: name || `${method} ${url}`,
+            method,
+            url,
+            body,
+            headers,
+            queryParams
+          });
+          treeProvider.refresh();
+          return;
+        }
+
+        case 'sendRequest': {
           const { method, url, body, headers, queryParams } = message;
           try {
             const urlObj = new URL(url);
@@ -72,6 +91,17 @@ export function registerSendRequestCommand(context: vscode.ExtensionContext): vs
             });
             const endTime = Date.now();
             const responseTime = endTime - startTime;
+
+            // Add this request to history automatically
+            await HistoryService.addToHistory(context, {
+              name: `${method} ${url}`,
+              method,
+              url,
+              body,
+              headers: message.headersList || [],
+              queryParams: message.queryParamsList || []
+            });
+            treeProvider.refresh();
 
             panel.webview.postMessage({
               type: 'response',
@@ -115,6 +145,7 @@ export function registerSendRequestCommand(context: vscode.ExtensionContext): vs
             });
           }
           break;
+        }
       }
     });
   });

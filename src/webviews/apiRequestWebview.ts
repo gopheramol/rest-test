@@ -431,22 +431,123 @@ export function getWebviewContent(initialState: any): string {
         .object-count {
           display: none;
         }
+
+        .action-buttons {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .save-button {
+          height: 40px;
+          padding: 0 1.5rem;
+          background: var(--gray-500);
+          color: white;
+          border: none;
+          border-radius: var(--radius);
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          white-space: nowrap;
+        }
+
+        .save-button:hover {
+          background: var(--gray-600);
+        }
+
+        .save-dialog {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.2s;
+        }
+
+        .save-dialog.active {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        .save-dialog-content {
+          background: white;
+          border-radius: var(--radius);
+          padding: 1.5rem;
+          width: 400px;
+          max-width: 90%;
+          box-shadow: var(--shadow-md);
+        }
+
+        .save-dialog-title {
+          font-size: 1.25rem;
+          font-weight: 600;
+          margin-bottom: 1rem;
+        }
+
+        .save-dialog-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        
+        .dialog-actions {
+          display: flex;
+          justify-content: flex-end;
+          gap: 0.5rem;
+          margin-top: 1.5rem;
+        }
+
+        .dialog-button {
+          padding: 0.5rem 1rem;
+          border-radius: var(--radius);
+          font-weight: 500;
+          cursor: pointer;
+        }
+
+        .dialog-cancel {
+          background: var(--gray-200);
+          color: var(--gray-800);
+          border: none;
+        }
+
+        .dialog-cancel:hover {
+          background: var(--gray-300);
+        }
+
+        .dialog-save {
+          background: var(--primary);
+          color: white;
+          border: none;
+        }
+
+        .dialog-save:hover {
+          background: var(--primary-dark);
+        }
       </style>
     </head>
     <body>
       <div class="form-container">
         <div class="request-row">
-          <select id="method" class="method-select">
-            <option value="GET">GET</option>
-            <option value="POST">POST</option>
-            <option value="PUT">PUT</option>
-            <option value="DELETE">DELETE</option>
-            <option value="PATCH">PATCH</option>
+          <select id="method-select" class="method-select">
+            <option value="GET" ${initialState.method === 'GET' ? 'selected' : ''}>GET</option>
+            <option value="POST" ${initialState.method === 'POST' ? 'selected' : ''}>POST</option>
+            <option value="PUT" ${initialState.method === 'PUT' ? 'selected' : ''}>PUT</option>
+            <option value="DELETE" ${initialState.method === 'DELETE' ? 'selected' : ''}>DELETE</option>
+            <option value="PATCH" ${initialState.method === 'PATCH' ? 'selected' : ''}>PATCH</option>
+            <option value="HEAD" ${initialState.method === 'HEAD' ? 'selected' : ''}>HEAD</option>
+            <option value="OPTIONS" ${initialState.method === 'OPTIONS' ? 'selected' : ''}>OPTIONS</option>
           </select>
-          <input type="text" id="url" class="url-input" placeholder="Enter request URL" />
-          <button onclick="sendRequest()" id="sendButton" class="send-button">
-            Send
-          </button>
+          <input type="text" id="url-input" class="url-input" placeholder="https://api.example.com/endpoint" value="${initialState.url || ''}">
+          <div class="action-buttons">
+            <button id="save-btn" class="save-button">Save</button>
+            <button id="send-btn" class="send-button">Send</button>
+          </div>
         </div>
 
         <div class="tabs">
@@ -496,6 +597,22 @@ export function getWebviewContent(initialState: any): string {
         </div>
       </div>
 
+      <div id="save-dialog" class="save-dialog">
+        <div class="save-dialog-content">
+          <div class="save-dialog-title">Save Request</div>
+          <div class="save-dialog-form">
+            <div>
+              <label for="request-name" style="display: block; margin-bottom: 0.5rem;">Request Name</label>
+              <input type="text" id="request-name" class="url-input" placeholder="My API Request">
+            </div>
+            <div class="dialog-actions">
+              <button id="dialog-cancel" class="dialog-button dialog-cancel">Cancel</button>
+              <button id="dialog-save" class="dialog-button dialog-save">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <script>
         const vscode = acquireVsCodeApi();
         const initialState = ${JSON.stringify(initialState)};
@@ -514,8 +631,8 @@ export function getWebviewContent(initialState: any): string {
         }
 
         function initializeForm() {
-          document.getElementById('method').value = currentState.method;
-          document.getElementById('url').value = currentState.url;
+          document.getElementById('method-select').value = currentState.method;
+          document.getElementById('url-input').value = currentState.url;
           document.getElementById('body').value = currentState.body;
 
           const queryParamsContainer = document.getElementById('queryParams');
@@ -535,8 +652,8 @@ export function getWebviewContent(initialState: any): string {
 
         function saveState() {
           currentState = {
-            method: document.getElementById('method').value,
-            url: document.getElementById('url').value,
+            method: document.getElementById('method-select').value,
+            url: document.getElementById('url-input').value,
             body: document.getElementById('body').value,
             queryParams: collectParamsArray('queryParams'),
             headers: collectParamsArray('headers')
@@ -635,7 +752,7 @@ export function getWebviewContent(initialState: any): string {
         }
 
         function updateURLWithParams() {
-          const urlInput = document.getElementById('url');
+          const urlInput = document.getElementById('url-input');
           const baseURL = urlInput.value.split('?')[0];
           const queryParams = collectParamsArray('queryParams');
           
@@ -908,8 +1025,8 @@ export function getWebviewContent(initialState: any): string {
         }
 
         function copyAsCurl() {
-          const method = document.getElementById('method').value;
-          const url = document.getElementById('url').value;
+          const method = document.getElementById('method-select').value;
+          const url = document.getElementById('url-input').value;
           const body = document.getElementById('body').value;
           const headers = collectParams('headers');
           
@@ -923,8 +1040,8 @@ export function getWebviewContent(initialState: any): string {
         }
 
         function sendRequest() {
-          const method = document.getElementById('method').value;
-          const url = document.getElementById('url').value;
+          const method = document.getElementById('method-select').value;
+          const url = document.getElementById('url-input').value;
           const body = document.getElementById('body').value;
           const headers = collectParams('headers');
           const queryParams = collectParams('queryParams');
@@ -950,7 +1067,7 @@ export function getWebviewContent(initialState: any): string {
             }
           }
 
-          const sendButton = document.getElementById('sendButton');
+          const sendButton = document.getElementById('send-btn');
           sendButton.disabled = true;
           showLoading();
 
@@ -971,8 +1088,8 @@ export function getWebviewContent(initialState: any): string {
           });
         });
 
-        document.getElementById('method').addEventListener('change', saveState);
-        document.getElementById('url').addEventListener('input', (e) => {
+        document.getElementById('method-select').addEventListener('change', saveState);
+        document.getElementById('url-input').addEventListener('input', (e) => {
           if (!e.target.value.includes('?')) {
             updateURLWithParams();
           }
@@ -982,7 +1099,7 @@ export function getWebviewContent(initialState: any): string {
 
         window.addEventListener('message', event => {
           const message = event.data;
-          const sendButton = document.getElementById('sendButton');
+          const sendButton = document.getElementById('send-btn');
           sendButton.disabled = false;
 
           if (message.type === 'response') {
@@ -1027,6 +1144,58 @@ export function getWebviewContent(initialState: any): string {
         document.addEventListener('DOMContentLoaded', () => {
           initializeForm();
           updateURLWithParams();
+        });
+
+        // Save dialog
+        const saveDialog = document.getElementById('save-dialog');
+        const saveBtn = document.getElementById('save-btn');
+        const dialogCancel = document.getElementById('dialog-cancel');
+        const dialogSave = document.getElementById('dialog-save');
+        const requestNameInput = document.getElementById('request-name');
+        
+        // Add event listener for send button
+        document.getElementById('send-btn').addEventListener('click', sendRequest);
+
+        saveBtn.addEventListener('click', () => {
+          const method = document.getElementById('method-select').value;
+          const url = document.getElementById('url-input').value;
+          
+          // Default name is method + url
+          requestNameInput.value = \`\${method} \${url}\`;
+          
+          // Show dialog
+          saveDialog.classList.add('active');
+        });
+
+        dialogCancel.addEventListener('click', () => {
+          saveDialog.classList.remove('active');
+        });
+
+        dialogSave.addEventListener('click', () => {
+          const methodSelect = document.getElementById('method-select');
+          const urlInput = document.getElementById('url-input');
+          const bodyEditor = document.getElementById('body');
+          
+          const name = requestNameInput.value.trim() || \`\${methodSelect.value} \${urlInput.value}\`;
+          
+          // Create state to save
+          const state = {
+            method: methodSelect.value,
+            url: urlInput.value,
+            body: bodyEditor.value,
+            headers: collectParams('headers'),
+            queryParams: collectParams('queryParams'),
+            name: name
+          };
+          
+          // Send message to extension
+          vscode.postMessage({
+            type: 'saveToHistory',
+            state: state
+          });
+          
+          // Hide dialog
+          saveDialog.classList.remove('active');
         });
       </script>
     </body>
