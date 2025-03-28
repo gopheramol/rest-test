@@ -9,6 +9,7 @@ export function getWebviewContent(initialState: any): string {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>REST API Tester</title>
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <style>
         :root {
           --primary: #2563eb;
@@ -31,6 +32,7 @@ export function getWebviewContent(initialState: any): string {
           --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
           --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
           --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+          --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * {
@@ -59,8 +61,8 @@ export function getWebviewContent(initialState: any): string {
         .request-row {
           display: grid;
           grid-template-columns: 120px 1fr auto;
-          gap: 0.5rem;
-          padding: 1rem;
+          gap: 0.75rem;
+          padding: 1.25rem;
           background: var(--gray-50);
           border-bottom: 1px solid var(--gray-200);
           align-items: center;
@@ -70,14 +72,14 @@ export function getWebviewContent(initialState: any): string {
         input,
         textarea {
           width: 100%;
-          padding: 0.625rem 0.875rem;
+          padding: 0.75rem 1rem;
           border: 1px solid var(--gray-200);
           border-radius: var(--radius);
           background: white;
           color: var(--gray-800);
           font-size: 0.875rem;
           line-height: 1.25rem;
-          transition: all 0.2s;
+          transition: var(--transition);
         }
 
         select:hover,
@@ -96,36 +98,71 @@ export function getWebviewContent(initialState: any): string {
 
         .method-select {
           width: 120px;
-          height: 40px;
+          height: 44px;
           border-radius: var(--radius);
           cursor: pointer;
           font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
 
         .url-input {
-          height: 40px;
+          height: 44px;
+          padding-left: 2.5rem;
         }
 
-        .send-button {
-          height: 40px;
+        .url-input-wrapper {
+          position: relative;
+        }
+
+        .url-input-wrapper .material-icons {
+          position: absolute;
+          left: 0.75rem;
+          top: 50%;
+          transform: translateY(-50%);
+          color: var(--gray-400);
+        }
+
+        .send-button,
+        .save-button {
+          height: 44px;
           padding: 0 1.5rem;
-          background: var(--primary);
           color: white;
           border: none;
           border-radius: var(--radius);
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: var(--transition);
           white-space: nowrap;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .send-button {
+          background: var(--primary);
         }
 
         .send-button:hover {
           background: var(--primary-dark);
+          transform: translateY(-1px);
         }
 
-        .send-button:disabled {
+        .save-button {
+          background: var(--gray-500);
+        }
+
+        .save-button:hover {
+          background: var(--gray-600);
+          transform: translateY(-1px);
+        }
+
+        .send-button:disabled,
+        .save-button:disabled {
           opacity: 0.7;
           cursor: not-allowed;
+          transform: none;
         }
 
         .tabs {
@@ -142,8 +179,11 @@ export function getWebviewContent(initialState: any): string {
           font-weight: 500;
           cursor: pointer;
           border-bottom: 2px solid transparent;
-          transition: all 0.2s;
+          transition: var(--transition);
           user-select: none;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
 
         .tab:hover {
@@ -170,15 +210,16 @@ export function getWebviewContent(initialState: any): string {
         .param-row {
           display: grid;
           grid-template-columns: 1fr 1fr 40px;
-          gap: 0.5rem;
-          margin-bottom: 0.5rem;
+          gap: 0.75rem;
+          margin-bottom: 0.75rem;
           align-items: center;
         }
 
         .add-param-button {
           display: inline-flex;
           align-items: center;
-          padding: 0.5rem 1rem;
+          gap: 0.5rem;
+          padding: 0.75rem 1.25rem;
           color: var(--primary);
           background: transparent;
           border: 1px dashed var(--primary);
@@ -186,17 +227,18 @@ export function getWebviewContent(initialState: any): string {
           font-size: 0.875rem;
           font-weight: 500;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: var(--transition);
         }
 
         .add-param-button:hover {
           background: var(--gray-50);
+          border-style: solid;
         }
 
         .remove-param-button {
           padding: 0.5rem;
-          min-width: 32px;
-          height: 32px;
+          min-width: 36px;
+          height: 36px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -205,7 +247,7 @@ export function getWebviewContent(initialState: any): string {
           border: 1px solid currentColor;
           border-radius: var(--radius);
           cursor: pointer;
-          transition: all 0.2s ease;
+          transition: var(--transition);
           position: relative;
         }
 
@@ -219,20 +261,15 @@ export function getWebviewContent(initialState: any): string {
           transform: scale(0.95);
         }
 
-        .remove-param-button svg {
-          width: 16px;
-          height: 16px;
-        }
-
         .response-container {
-          margin-top: 1rem;
+          margin-top: 1.5rem;
           border: 1px solid var(--gray-200);
           border-radius: var(--radius);
           overflow: hidden;
         }
 
         .response-header {
-          padding: 0.75rem 1rem;
+          padding: 1rem 1.25rem;
           background: var(--gray-50);
           border-bottom: 1px solid var(--gray-200);
           font-weight: 500;
@@ -250,9 +287,12 @@ export function getWebviewContent(initialState: any): string {
         .response-time {
           font-size: 0.875rem;
           color: var(--gray-600);
-          padding: 0.25rem 0.75rem;
+          padding: 0.375rem 0.75rem;
           background: var(--gray-100);
           border-radius: var(--radius);
+          display: flex;
+          align-items: center;
+          gap: 0.375rem;
         }
 
         .response-success .response-time {
@@ -266,7 +306,7 @@ export function getWebviewContent(initialState: any): string {
         }
 
         .response-body {
-          padding: 1rem;
+          padding: 1.25rem;
           background: white;
           font-family: 'Menlo', Monaco, 'Courier New', monospace;
           font-size: 0.875rem;
@@ -288,22 +328,22 @@ export function getWebviewContent(initialState: any): string {
 
         .button-group {
           display: flex;
-          gap: 0.5rem;
+          gap: 0.75rem;
         }
 
         .copy-button,
         .copy-as-curl {
-          padding: 0.25rem 0.75rem;
+          padding: 0.5rem 1rem;
           background: transparent;
           color: inherit;
           border: 1px solid currentColor;
           border-radius: var(--radius);
           font-size: 0.875rem;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: var(--transition);
           display: flex;
           align-items: center;
-          gap: 0.375rem;
+          gap: 0.5rem;
         }
 
         .copy-button:hover,
@@ -324,13 +364,13 @@ export function getWebviewContent(initialState: any): string {
           justify-content: center;
           padding: 2rem;
           color: var(--gray-500);
-          gap: 0.5rem;
+          gap: 0.75rem;
         }
 
         .loading::after {
           content: '';
-          width: 1rem;
-          height: 1rem;
+          width: 1.25rem;
+          height: 1.25rem;
           border: 2px solid var(--gray-200);
           border-top-color: var(--primary);
           border-radius: 50%;
@@ -348,24 +388,27 @@ export function getWebviewContent(initialState: any): string {
 
         .copy-feedback {
           position: fixed;
-          bottom: 1rem;
-          right: 1rem;
+          bottom: 1.5rem;
+          right: 1.5rem;
           background: var(--success);
           color: white;
-          padding: 0.5rem 1rem;
+          padding: 0.75rem 1.25rem;
           border-radius: var(--radius);
           animation: fade 2s ease-in-out;
           pointer-events: none;
           z-index: 1000;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          box-shadow: var(--shadow-md);
         }
 
-        /* Add these styles for collapsible JSON */
         .json-container {
           font-family: 'Menlo', Monaco, 'Courier New', monospace;
           font-size: 0.875rem;
           line-height: 1.5;
           white-space: pre;
-          padding: 1rem;
+          padding: 1.25rem;
           background: var(--gray-50);
           border-radius: var(--radius);
           overflow-x: auto;
@@ -413,24 +456,7 @@ export function getWebviewContent(initialState: any): string {
 
         .action-buttons {
           display: flex;
-          gap: 0.5rem;
-        }
-
-        .save-button {
-          height: 40px;
-          padding: 0 1.5rem;
-          background: var(--gray-500);
-          color: white;
-          border: none;
-          border-radius: var(--radius);
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s;
-          white-space: nowrap;
-        }
-
-        .save-button:hover {
-          background: var(--gray-600);
+          gap: 0.75rem;
         }
 
         .save-dialog {
@@ -446,7 +472,7 @@ export function getWebviewContent(initialState: any): string {
           z-index: 1000;
           opacity: 0;
           pointer-events: none;
-          transition: opacity 0.2s;
+          transition: var(--transition);
         }
 
         .save-dialog.active {
@@ -461,12 +487,21 @@ export function getWebviewContent(initialState: any): string {
           width: 400px;
           max-width: 90%;
           box-shadow: var(--shadow-md);
+          transform: translateY(-20px);
+          transition: var(--transition);
+        }
+
+        .save-dialog.active .save-dialog-content {
+          transform: translateY(0);
         }
 
         .save-dialog-title {
           font-size: 1.25rem;
           font-weight: 600;
-          margin-bottom: 1rem;
+          margin-bottom: 1.25rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
         }
 
         .save-dialog-form {
@@ -478,15 +513,19 @@ export function getWebviewContent(initialState: any): string {
         .dialog-actions {
           display: flex;
           justify-content: flex-end;
-          gap: 0.5rem;
+          gap: 0.75rem;
           margin-top: 1.5rem;
         }
 
         .dialog-button {
-          padding: 0.5rem 1rem;
+          padding: 0.625rem 1.25rem;
           border-radius: var(--radius);
           font-weight: 500;
           cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          transition: var(--transition);
         }
 
         .dialog-cancel {
@@ -522,31 +561,51 @@ export function getWebviewContent(initialState: any): string {
             <option value="HEAD" ${initialState.method === 'HEAD' ? 'selected' : ''}>HEAD</option>
             <option value="OPTIONS" ${initialState.method === 'OPTIONS' ? 'selected' : ''}>OPTIONS</option>
           </select>
-          <input type="text" id="url-input" class="url-input" placeholder="https://api.example.com/endpoint" value="${initialState.url || ''}">
+          <div class="url-input-wrapper">
+            <span class="material-icons">link</span>
+            <input type="text" id="url-input" class="url-input" placeholder="https://api.example.com/endpoint" value="${initialState.url || ''}">
+          </div>
           <div class="action-buttons">
-            <button id="save-btn" class="save-button">Save</button>
-            <button id="send-btn" class="send-button">Send</button>
+            <button id="save-btn" class="save-button">
+              <span class="material-icons">save</span>
+              Save
+            </button>
+            <button id="send-btn" class="send-button">
+              <span class="material-icons">send</span>
+              Send
+            </button>
           </div>
         </div>
 
         <div class="tabs">
-          <div class="tab active" data-tab="params">Params</div>
-          <div class="tab" data-tab="headers">Headers</div>
-          <div class="tab" data-tab="body">Body</div>
+          <div class="tab active" data-tab="params">
+            <span class="material-icons">code</span>
+            Params
+          </div>
+          <div class="tab" data-tab="headers">
+            <span class="material-icons">http</span>
+            Headers
+          </div>
+          <div class="tab" data-tab="body">
+            <span class="material-icons">data_object</span>
+            Body
+          </div>
         </div>
 
         <div class="tab-content">
           <div id="params-section" class="content-section active">
             <div id="queryParams" class="param-rows"></div>
             <button class="add-param-button" onclick="addParamRow('queryParams')">
-              + Add Parameter
+              <span class="material-icons">add</span>
+              Add Parameter
             </button>
           </div>
 
           <div id="headers-section" class="content-section">
             <div id="headers" class="param-rows"></div>
             <button class="add-param-button" onclick="addParamRow('headers')">
-              + Add Header
+              <span class="material-icons">add</span>
+              Add Header
             </button>
           </div>
 
@@ -560,13 +619,18 @@ export function getWebviewContent(initialState: any): string {
             <div id="responseHeader" class="response-header">
               <div class="response-status">
                 <span id="responseStatus"></span>
-                <span id="responseTime" class="response-time"></span>
+                <span id="responseTime" class="response-time">
+                  <span class="material-icons">timer</span>
+                  <span></span>
+                </span>
               </div>
               <div class="button-group">
-                <button id="copyAsCurlButton" class="copy-as-curl" onclick="copyAsCurl()">
+                <button id="copyAsCurlButton" class="copy-as-curl">
+                  <span class="material-icons">content_copy</span>
                   Copy as cURL
                 </button>
-                <button id="copyButton" class="copy-button" onclick="copyResponse()">
+                <button id="copyButton" class="copy-button">
+                  <span class="material-icons">content_copy</span>
                   Copy Response
                 </button>
               </div>
@@ -578,15 +642,24 @@ export function getWebviewContent(initialState: any): string {
 
       <div id="save-dialog" class="save-dialog">
         <div class="save-dialog-content">
-          <div class="save-dialog-title">Save Request</div>
+          <div class="save-dialog-title">
+            <span class="material-icons">save</span>
+            Save Request
+          </div>
           <div class="save-dialog-form">
             <div>
               <label for="request-name" style="display: block; margin-bottom: 0.5rem;">Request Name</label>
               <input type="text" id="request-name" class="url-input" placeholder="My API Request">
             </div>
             <div class="dialog-actions">
-              <button id="dialog-cancel" class="dialog-button dialog-cancel">Cancel</button>
-              <button id="dialog-save" class="dialog-button dialog-save">Save</button>
+              <button id="dialog-cancel" class="dialog-button dialog-cancel">
+                <span class="material-icons">close</span>
+                Cancel
+              </button>
+              <button id="dialog-save" class="dialog-button dialog-save">
+                <span class="material-icons">save</span>
+                Save
+              </button>
             </div>
           </div>
         </div>
