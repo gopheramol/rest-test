@@ -47,28 +47,6 @@
           "command": "restApiTest.refreshView",
           "when": "view == restApiTesterView",
           "group": "navigation"
-        },
-        {
-          "command": "restApiTest.clearHistory",
-          "when": "view == restApiTesterView",
-          "group": "2_history"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "restApiTest.renameHistoryRequest",
-          "when": "view == restApiTesterView && viewItem == historyRequest",
-          "group": "1_historyActions"
-        },
-        {
-          "command": "restApiTest.deleteHistoryRequest",
-          "when": "view == restApiTesterView && viewItem == historyRequest",
-          "group": "1_historyActions"
-        },
-        {
-          "command": "restApiTest.executeHistoryRequest",
-          "when": "view == restApiTesterView && viewItem == historyRequest",
-          "group": "navigation"
         }
       ]
     },
@@ -82,26 +60,6 @@
         "command": "restApiTest.refreshView",
         "title": "Refresh",
         "icon": "$(refresh)"
-      },
-      {
-        "command": "restApiTest.executeHistoryRequest",
-        "title": "Execute Request",
-        "icon": "$(play)"
-      },
-      {
-        "command": "restApiTest.renameHistoryRequest",
-        "title": "Rename Request",
-        "icon": "$(edit)"
-      },
-      {
-        "command": "restApiTest.deleteHistoryRequest",
-        "title": "Delete Request",
-        "icon": "$(trash)"
-      },
-      {
-        "command": "restApiTest.clearHistory",
-        "title": "Clear All History",
-        "icon": "$(clear-all)"
       }
     ]
   },

@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { RestApiTreeProvider } from './providers/RestApiTreeProvider';
 import { registerSendRequestCommand } from './commands/sendRequest';
-import { registerHistoryCommands } from './commands/historyCommands';
 
 export function activate(context: vscode.ExtensionContext) {
   // Create the tree provider with the context
@@ -19,9 +18,6 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Register commands
   context.subscriptions.push(registerSendRequestCommand(context, treeProvider));
-  
-  // Register history commands
-  context.subscriptions.push(...registerHistoryCommands(context, treeProvider));
   
   // Register context menu commands
   context.subscriptions.push(

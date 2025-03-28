@@ -271,8 +271,9 @@ export function getWebviewContent(initialState: any): string {
           font-family: 'Menlo', Monaco, 'Courier New', monospace;
           font-size: 0.875rem;
           line-height: 1.5;
-          white-space: pre-wrap;
+          white-space: pre;
           overflow-x: auto;
+          tab-size: 4;
         }
 
         .response-success .response-header {
@@ -363,11 +364,12 @@ export function getWebviewContent(initialState: any): string {
           font-family: 'Menlo', Monaco, 'Courier New', monospace;
           font-size: 0.875rem;
           line-height: 1.5;
-          white-space: pre-wrap;
-        }
-
-        .json-key {
-          color: var(--primary);
+          white-space: pre;
+          padding: 1rem;
+          background: var(--gray-50);
+          border-radius: var(--radius);
+          overflow-x: auto;
+          tab-size: 4;
         }
 
         .json-string {
@@ -386,50 +388,27 @@ export function getWebviewContent(initialState: any): string {
           color: #6b7280;
         }
 
-        .json-collapsible {
-          cursor: pointer;
+        .json-bracket {
+          color: var(--gray-600);
+        }
+
+        .json-comma {
+          color: var(--gray-600);
+          margin-right: 0.25rem;
+        }
+
+        .json-indent {
           display: inline-block;
-          position: relative;
-          user-select: none;
+          width: 1.5rem;
         }
 
-        .json-collapsible::before {
-          content: '';
-          display: inline-block;
-          width: 0;
-          height: 0;
-          border-style: solid;
-          border-width: 4px 4px 0 4px;
-          border-color: var(--gray-600) transparent transparent transparent;
-          margin-right: 3px;
-          position: relative;
-          top: -2px;
-          transition: transform 0.15s ease;
+        .json-row {
+          display: block;
+          min-height: 1.5rem;
         }
 
-        .json-collapsed::before {
-          transform: rotate(-90deg);
-        }
-
-        .json-content {
-          margin-left: 1.2rem;
-          border-left: 1px dotted var(--gray-300);
-          padding-left: 0.3rem;
-        }
-
-        // Add JSON object counter styles
-        .json-stats {
-          display: none;
-        }
-
-        // Add styles for array indices
-        .json-array-index {
-          display: none;
-        }
-
-        // Update styles for object count circles
-        .object-count {
-          display: none;
+        .json-row:hover {
+          background-color: var(--gray-100);
         }
 
         .action-buttons {
@@ -792,137 +771,20 @@ export function getWebviewContent(initialState: any): string {
             const container = document.createElement('div');
             container.className = 'json-container';
             
-            renderJSONValue(obj, container, 0);
+            // Use standard JSON.stringify with 4 spaces indentation
+            const formattedJson = JSON.stringify(obj, null, 4);
+            
+            // Apply syntax highlighting without key highlighting
+            const highlightedJson = formattedJson
+              .replace(/"([^"]+)"/g, '<span class="json-string">"$1"</span>')
+              .replace(/\b(true|false)\b/g, '<span class="json-boolean">$1</span>')
+              .replace(/\b(null)\b/g, '<span class="json-null">$1</span>')
+              .replace(/\b(-?\d+\.?\d*)\b/g, '<span class="json-number">$1</span>');
+            
+            container.innerHTML = highlightedJson;
             return container;
           } catch (e) {
             return json;
-          }
-        }
-
-        // Create a simple collapsible element
-        function createCollapsible(label, content, isCollapsed = false) {
-          const container = document.createElement('div');
-          container.style.display = 'inline-block';
-          
-          // Create the header with collapse control
-          const header = document.createElement('span');
-          header.className = 'json-collapsible';
-          if (isCollapsed) {
-            header.classList.add('json-collapsed');
-          }
-          header.textContent = label;
-          header.addEventListener('click', function() {
-            this.classList.toggle('json-collapsed');
-            contentDiv.style.display = this.classList.contains('json-collapsed') ? 'none' : 'block';
-          });
-          container.appendChild(header);
-          
-          // Create the content container
-          const contentDiv = document.createElement('div');
-          contentDiv.className = 'json-content';
-          contentDiv.style.display = isCollapsed ? 'none' : 'block';
-          contentDiv.appendChild(content);
-          container.appendChild(contentDiv);
-          
-          return container;
-        }
-
-        // Replace the renderJSONValue function completely
-        function renderJSONValue(value, container, depth) {
-          if (value === null) {
-            const span = document.createElement('span');
-            span.className = 'json-null';
-            span.textContent = 'null';
-            container.appendChild(span);
-          } else if (typeof value === 'boolean') {
-            const span = document.createElement('span');
-            span.className = 'json-boolean';
-            span.textContent = value.toString();
-            container.appendChild(span);
-          } else if (typeof value === 'number') {
-            const span = document.createElement('span');
-            span.className = 'json-number';
-            span.textContent = value.toString();
-            container.appendChild(span);
-          } else if (typeof value === 'string') {
-            const span = document.createElement('span');
-            span.className = 'json-string';
-            span.textContent = '"' + value + '"';
-            container.appendChild(span);
-          } else if (Array.isArray(value)) {
-            if (value.length === 0) {
-              container.appendChild(document.createTextNode('[]'));
-            } else {
-              // Create a content container for array items
-              const content = document.createElement('div');
-              
-              // Add each item to the array
-              value.forEach((item, index) => {
-                const itemDiv = document.createElement('div');
-                renderJSONValue(item, itemDiv, depth + 1);
-                if (index < value.length - 1) {
-                  itemDiv.appendChild(document.createTextNode(','));
-                }
-                content.appendChild(itemDiv);
-              });
-              
-              // Add closing bracket
-              const closeBracket = document.createElement('div');
-              closeBracket.textContent = ']';
-              content.appendChild(closeBracket);
-              
-              // Create collapsible component if needed
-              if (depth > 0) {
-                const collapsible = createCollapsible('[', content, false);
-                container.appendChild(collapsible);
-              } else {
-                container.appendChild(document.createTextNode('['));
-                container.appendChild(content);
-              }
-            }
-          } else if (typeof value === 'object') {
-            const keys = Object.keys(value);
-            if (keys.length === 0) {
-              container.appendChild(document.createTextNode('{}'));
-            } else {
-              // Create a content container for object properties
-              const content = document.createElement('div');
-              
-              // Add each property
-              keys.forEach((key, index) => {
-                const propDiv = document.createElement('div');
-                
-                // Add property key
-                const keySpan = document.createElement('span');
-                keySpan.className = 'json-key';
-                keySpan.textContent = '"' + key + '": ';
-                propDiv.appendChild(keySpan);
-                
-                // Add property value
-                renderJSONValue(value[key], propDiv, depth + 1);
-                
-                // Add comma if not last property
-                if (index < keys.length - 1) {
-                  propDiv.appendChild(document.createTextNode(','));
-                }
-                
-                content.appendChild(propDiv);
-              });
-              
-              // Add closing brace
-              const closeBrace = document.createElement('div');
-              closeBrace.textContent = '}';
-              content.appendChild(closeBrace);
-              
-              // Create collapsible component if needed
-              if (depth > 0) {
-                const collapsible = createCollapsible('{', content, false);
-                container.appendChild(collapsible);
-              } else {
-                container.appendChild(document.createTextNode('{'));
-                container.appendChild(content);
-              }
-            }
           }
         }
 
@@ -1146,6 +1008,9 @@ export function getWebviewContent(initialState: any): string {
           updateURLWithParams();
         });
 
+        // Add event listener for send button
+        document.getElementById('send-btn').addEventListener('click', sendRequest);
+
         // Save dialog
         const saveDialog = document.getElementById('save-dialog');
         const saveBtn = document.getElementById('save-btn');
@@ -1153,15 +1018,12 @@ export function getWebviewContent(initialState: any): string {
         const dialogSave = document.getElementById('dialog-save');
         const requestNameInput = document.getElementById('request-name');
         
-        // Add event listener for send button
-        document.getElementById('send-btn').addEventListener('click', sendRequest);
-
         saveBtn.addEventListener('click', () => {
           const method = document.getElementById('method-select').value;
           const url = document.getElementById('url-input').value;
           
           // Default name is method + url
-          requestNameInput.value = \`\${method} \${url}\`;
+          requestNameInput.value = method + ' ' + url;
           
           // Show dialog
           saveDialog.classList.add('active');
@@ -1176,7 +1038,7 @@ export function getWebviewContent(initialState: any): string {
           const urlInput = document.getElementById('url-input');
           const bodyEditor = document.getElementById('body');
           
-          const name = requestNameInput.value.trim() || \`\${methodSelect.value} \${urlInput.value}\`;
+          const name = requestNameInput.value.trim() || methodSelect.value + ' ' + urlInput.value;
           
           // Create state to save
           const state = {
@@ -1190,7 +1052,7 @@ export function getWebviewContent(initialState: any): string {
           
           // Send message to extension
           vscode.postMessage({
-            type: 'saveToHistory',
+            type: 'saveRequest',
             state: state
           });
           

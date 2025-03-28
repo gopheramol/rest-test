@@ -2,8 +2,16 @@ import * as vscode from 'vscode';
 import axios from 'axios';
 import { getWebviewContent } from '../webviews/apiRequestWebview';
 import { generateCurlCommand } from '../utils/curlGenerator';
-import { HistoryService } from '../services/HistoryService';
 import { RestApiTreeProvider } from '../providers/RestApiTreeProvider';
+
+interface SavedRequest {
+  name: string;
+  method: string;
+  url: string;
+  body: string;
+  headers: { key: string; value: string }[];
+  queryParams: { key: string; value: string }[];
+}
 
 /**
  * Handler for the sendRequest command
@@ -12,10 +20,10 @@ export function registerSendRequestCommand(
   context: vscode.ExtensionContext,
   treeProvider: RestApiTreeProvider
 ): vscode.Disposable {
-  return vscode.commands.registerCommand('restApiTest.sendRequest', async () => {
+  return vscode.commands.registerCommand('restApiTest.sendRequest', async (savedRequest?: SavedRequest) => {
     const panel = vscode.window.createWebviewPanel(
       'restApiTest',
-      'REST TEST',
+      savedRequest ? `REST TEST - ${savedRequest.name}` : 'REST TEST',
       vscode.ViewColumn.One,
       {
         enableScripts: true,
@@ -23,7 +31,7 @@ export function registerSendRequestCommand(
       }
     );
 
-    const storedState = context.globalState.get('restApiTesterState', {
+    const storedState = savedRequest || context.globalState.get('restApiTesterState', {
       method: 'GET',
       url: '',
       body: '',
@@ -38,6 +46,39 @@ export function registerSendRequestCommand(
         case 'saveState':
           await context.globalState.update('restApiTesterState', message.state);
           return;
+
+        case 'saveRequest': {
+          const { method, url, body, headers, queryParams, name } = message.state;
+          const savedRequests = context.globalState.get<SavedRequest[]>('restApiTesterSavedRequests', []);
+          
+          // Check if request with same name exists
+          const existingIndex = savedRequests.findIndex(req => req.name === name);
+          if (existingIndex !== -1) {
+            // Update existing request
+            savedRequests[existingIndex] = {
+              name,
+              method,
+              url,
+              body,
+              headers,
+              queryParams
+            };
+          } else {
+            // Add new request
+            savedRequests.push({
+              name,
+              method,
+              url,
+              body,
+              headers,
+              queryParams
+            });
+          }
+          
+          await context.globalState.update('restApiTesterSavedRequests', savedRequests);
+          treeProvider.refresh();
+          return;
+        }
 
         case 'copyToClipboard':
           await vscode.env.clipboard.writeText(message.text);
@@ -55,20 +96,6 @@ export function registerSendRequestCommand(
             source: 'curl'
           });
           return;
-
-        case 'saveToHistory': {
-          const { method, url, body, headers, queryParams, name } = message.state;
-          await HistoryService.addToHistory(context, {
-            name: name || `${method} ${url}`,
-            method,
-            url,
-            body,
-            headers,
-            queryParams
-          });
-          treeProvider.refresh();
-          return;
-        }
 
         case 'sendRequest': {
           const { method, url, body, headers, queryParams } = message;
@@ -91,17 +118,6 @@ export function registerSendRequestCommand(
             });
             const endTime = Date.now();
             const responseTime = endTime - startTime;
-
-            // Add this request to history automatically
-            await HistoryService.addToHistory(context, {
-              name: `${method} ${url}`,
-              method,
-              url,
-              body,
-              headers: message.headersList || [],
-              queryParams: message.queryParamsList || []
-            });
-            treeProvider.refresh();
 
             panel.webview.postMessage({
               type: 'response',

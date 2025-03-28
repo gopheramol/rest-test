@@ -20,8 +20,9 @@ A Visual Studio Code extension for testing REST APIs directly from your editor w
   - JSON body editor
   
 - **Advanced Features**:
-  - Auto-save of your last request configuration
-  - JSON response formatting
+  - Save and manage your API requests
+  - Method-specific icons for easy identification
+  - JSON response formatting with syntax highlighting
   - Error handling with clear messages
   - Request state persistence across sessions
   - Real-time request status updates
@@ -67,11 +68,24 @@ A Visual Studio Code extension for testing REST APIs directly from your editor w
    - Click the "Send Request" button
    - View the response in the panel below
 
+### Saving Requests
+
+1. **Save Current Request**:
+   - Click the "Save" button
+   - Enter a name for your request
+   - The request will appear in the "Saved Requests" section
+
+2. **Using Saved Requests**:
+   - Access saved requests from the sidebar
+   - Each request shows with a method-specific icon
+   - Click to load and execute the saved request
+
 ### Response Handling
 
 - **Success Responses**:
   - Status code and status text displayed
   - Response body formatted as pretty JSON
+  - Syntax highlighting for different JSON types
   - Easy to read color-coded display
 
 - **Error Responses**:
@@ -88,6 +102,7 @@ The extension automatically saves:
 - Query parameters
 - Headers
 - Request body
+- Saved requests with custom names
 
 This state persists across VS Code sessions for convenience.
 
@@ -98,24 +113,24 @@ This state persists across VS Code sessions for convenience.
 
 ## Extension Settings
 
-Currently, this extension doesn't require any additional settings. All functionality is available out of the box.
-
-## Known Issues
-
-Please report any issues on the [GitHub repository](https://github.com/gopheramol/rest-test/issues).
-
 ## Release Notes
 
-### 2.6.0
+### [2.8.4] - 2024-03-14
 
-Initial release of REST TEST with:
-- Basic HTTP methods support
-- Query parameters and headers management
-- JSON body editor
-- Response formatting
-- State persistence
-- Copy Request as cURL
-- Copy JSON Response
+### Added
+- Save and manage API requests with custom names
+- Method-specific icons for saved requests
+- Improved JSON response formatting with syntax highlighting
+- Visual indicators for different HTTP methods
+
+### Changed
+- Updated sidebar interface with new icons
+- Improved JSON response display
+- Better organization of saved requests
+
+### Fixed
+- Fixed JSON formatting issues
+- Improved response readability
 
 ## Contributing
 
