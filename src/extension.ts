@@ -8,8 +8,7 @@ export function activate(context: vscode.ExtensionContext) {
   
   // Register view container
   const restApiContainer = vscode.window.createTreeView('restApiTesterView', {
-    treeDataProvider: treeProvider,
-    showCollapseAll: true
+    treeDataProvider: treeProvider
   });
   
   context.subscriptions.push(
@@ -19,7 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
   // Register commands
   context.subscriptions.push(registerSendRequestCommand(context, treeProvider));
   
-  // Register context menu commands
+  // Register refresh command
   context.subscriptions.push(
     vscode.commands.registerCommand('restApiTest.refreshView', () => {
       treeProvider.refresh();

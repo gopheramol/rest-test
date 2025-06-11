@@ -9,3 +9,11 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+test-server.js
+test-nested-json.json
+COLLAPSE_FIX.md
+TEST_GUIDE.md
+SIMPLE_JSON_TEST.md
+build-extension.sh
+quick-build.sh
+*.vsix

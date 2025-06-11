@@ -1,8 +1,8 @@
 {
   "name": "rest-test",
   "displayName": "REST TEST",
-  "description": "",
-  "version": "2.8.5",
+  "description": "High-performance REST API testing extension for VS Code with lightning-fast UI, smooth animations, and comprehensive request management",
+  "version": "3.2.0",
   "publisher": "GopherAmol",
   "license": "MIT",
   "repository": {

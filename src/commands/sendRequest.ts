@@ -48,31 +48,17 @@ export function registerSendRequestCommand(
           return;
 
         case 'saveRequest': {
-          const { method, url, body, headers, queryParams, name } = message.state;
+          const requestData = message.request;
           const savedRequests = context.globalState.get<SavedRequest[]>('restApiTesterSavedRequests', []);
           
           // Check if request with same name exists
-          const existingIndex = savedRequests.findIndex(req => req.name === name);
+          const existingIndex = savedRequests.findIndex(req => req.name === requestData.name);
           if (existingIndex !== -1) {
             // Update existing request
-            savedRequests[existingIndex] = {
-              name,
-              method,
-              url,
-              body,
-              headers,
-              queryParams
-            };
+            savedRequests[existingIndex] = requestData;
           } else {
             // Add new request
-            savedRequests.push({
-              name,
-              method,
-              url,
-              body,
-              headers,
-              queryParams
-            });
+            savedRequests.push(requestData);
           }
           
           await context.globalState.update('restApiTesterSavedRequests', savedRequests);
@@ -84,7 +70,7 @@ export function registerSendRequestCommand(
           await vscode.env.clipboard.writeText(message.text);
           panel.webview.postMessage({
             type: 'copySuccess',
-            source: 'response'
+            message: 'Response copied to clipboard!'
           });
           return;
 
@@ -93,71 +79,104 @@ export function registerSendRequestCommand(
           await vscode.env.clipboard.writeText(curlCommand);
           panel.webview.postMessage({
             type: 'copySuccess',
-            source: 'curl'
+            message: 'cURL command copied to clipboard!'
           });
           return;
 
         case 'sendRequest': {
           const { method, url, body, headers, queryParams } = message;
           try {
+            console.log('Sending request:', { method, url, body, headers, queryParams });
+            
             const urlObj = new URL(url);
-            if (queryParams) {
+            
+            // Process query parameters correctly
+            if (queryParams && Array.isArray(queryParams)) {
+              queryParams.forEach((param: { key: string; value: string }) => {
+                if (param.key && param.value) {
+                  urlObj.searchParams.append(param.key, param.value);
+                }
+              });
+            } else if (queryParams && typeof queryParams === 'object') {
               Object.entries(queryParams).forEach(([key, value]) => {
-                if (value) {
+                if (key && value) {
                   urlObj.searchParams.append(key, value as string);
                 }
               });
+            }
+
+            // Process headers correctly
+            const processedHeaders: Record<string, string> = {};
+            if (headers && Array.isArray(headers)) {
+              headers.forEach((header: { key: string; value: string }) => {
+                if (header.key && header.value) {
+                  processedHeaders[header.key] = header.value;
+                }
+              });
+            } else if (headers && typeof headers === 'object') {
+              Object.entries(headers).forEach(([key, value]) => {
+                if (key && value) {
+                  processedHeaders[key] = value as string;
+                }
+              });
+            }
+
+            // Set Content-Type for POST/PUT/PATCH if not already set and body exists
+            if (body && ['post', 'put', 'patch'].includes(method.toLowerCase()) && !processedHeaders['Content-Type']) {
+              processedHeaders['Content-Type'] = 'application/json';
             }
 
             const startTime = Date.now();
             const response = await axios({
               method: method.toLowerCase(),
               url: urlObj.toString(),
-              data: body ? JSON.parse(body) : undefined,
-              headers: headers || {},
+              data: body ? (typeof body === 'string' ? JSON.parse(body) : body) : undefined,
+              headers: processedHeaders,
+              timeout: 30000, // 30 second timeout
             });
             const endTime = Date.now();
             const responseTime = endTime - startTime;
 
+            console.log('Response received:', { 
+              status: response.status, 
+              statusText: response.statusText, 
+              data: response.data,
+              responseTime 
+            });
+
+            // Send response data without double-stringifying
             panel.webview.postMessage({
               type: 'response',
               status: response.status,
               statusText: response.statusText,
-              data: JSON.stringify(response.data, null, 2),
-              responseTime: responseTime
+              data: response.data, // Send raw data, let frontend handle formatting
+              responseTime: responseTime,
+              headers: response.headers || {}
             });
           } catch (error) {
+            console.error('Request error:', error);
+            
             let errorMessage = 'An unknown error occurred.';
             let errorData = null;
             
             if (axios.isAxiosError(error)) {
               if (error.response) {
-                errorMessage = `Status: ${error.response.status} - ${error.response.statusText}`;
-                
-                // Format error response data if it exists
-                if (error.response.data) {
-                  try {
-                    errorData = typeof error.response.data === 'string' 
-                      ? JSON.parse(error.response.data) 
-                      : error.response.data;
-                    errorData = JSON.stringify(errorData, null, 2);
-                  } catch {
-                    errorData = String(error.response.data);
-                  }
-                }
+                errorMessage = `HTTP ${error.response.status} - ${error.response.statusText}`;
+                errorData = error.response.data;
               } else if (error.request) {
-                errorMessage = 'No response received from server';
+                errorMessage = 'No response received from server. Check your network connection.';
               } else {
-                errorMessage = error.message;
+                errorMessage = `Request failed: ${error.message}`;
               }
             } else if (error instanceof Error) {
-              errorMessage = error.message;
+              errorMessage = `Error: ${error.message}`;
             }
             
             panel.webview.postMessage({
               type: 'error',
               message: errorMessage,
-              data: errorData
+              data: errorData,
+              headers: (axios.isAxiosError(error) && error.response) ? error.response.headers || {} : {}
             });
           }
           break;

@@ -4,6 +4,22 @@ All notable changes to the "rest-test" extension will be documented in this file
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [3.1.1] - 2024-12-23
+
+### Changed
+- Simplified JSON display with clean beautification and syntax highlighting
+- Removed complex collapsible functionality for better performance and reliability
+- Improved JSON readability with proper indentation and color coding
+
+### Removed
+- Collapsible/expandable JSON tree functionality to eliminate bugs and complexity
+- Toggle icons and nested state management
+
+### Fixed
+- Performance issues with large JSON responses
+- Complex DOM manipulation that could cause rendering problems
+- Nested collapse/expand conflicts and state preservation issues
+
 ## [2.8.3] - 2024-03-14
 
 ### Added
