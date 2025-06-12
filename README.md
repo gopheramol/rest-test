@@ -123,7 +123,7 @@ This state persists across VS Code sessions for convenience.
 
 ## Release Notes
 
-### [3.2.0] - 2024-12-28
+### [3.2.0] - 2025-06-11
 
 #### 🚀 Major Performance Optimization Release
 
