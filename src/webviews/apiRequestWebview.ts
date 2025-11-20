@@ -12,109 +12,105 @@ export function getWebviewContent(initialState: any): string {
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
       <noscript><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"></noscript>
       <style>
-        /* Inline critical fonts to prevent loading delays */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
-      </style>
-      <style>
         :root {
-          /* Enhanced Modern Color Palette */
-          --primary: #3b82f6;
-          --primary-dark: #2563eb;
-          --primary-light: #60a5fa;
-          --primary-accent: #1d4ed8;
-          --secondary: #06b6d4;
-          --secondary-dark: #0891b2;
-          --accent: #f59e0b;
-          --success: #10b981;
-          --success-dark: #059669;
-          --error: #ef4444;
-          --error-dark: #dc2626;
-          --warning: #f59e0b;
-          --warning-dark: #d97706;
-          --info: #3b82f6;
+          /* Postman-Inspired Professional Color Palette */
+          --primary: #FF6C37;
+          --primary-dark: #E85C2A;
+          --primary-light: #FF8A5B;
+          --primary-accent: #D94E1F;
+          --secondary: #5F6368;
+          --secondary-dark: #4A4D50;
+          --accent: #FF6C37;
+          --success: #00C853;
+          --success-dark: #00A843;
+          --error: #F44336;
+          --error-dark: #D32F2F;
+          --warning: #FFA726;
+          --warning-dark: #FB8C00;
+          --info: #2196F3;
           
-          /* Professional Gray Scale */
+          /* Professional Gray Scale (Postman-like) */
           --white: #ffffff;
-          --gray-25: #fefefe;
-          --gray-50: #f9fafb;
-          --gray-100: #f3f4f6;
-          --gray-200: #e5e7eb;
-          --gray-300: #d1d5db;
-          --gray-400: #9ca3af;
-          --gray-500: #6b7280;
-          --gray-600: #4b5563;
-          --gray-700: #374151;
-          --gray-800: #1f2937;
-          --gray-900: #111827;
-          --gray-950: #030712;
+          --gray-25: #FAFAFA;
+          --gray-50: #F5F5F5;
+          --gray-100: #EEEEEE;
+          --gray-200: #E0E0E0;
+          --gray-300: #BDBDBD;
+          --gray-400: #9E9E9E;
+          --gray-500: #757575;
+          --gray-600: #616161;
+          --gray-700: #424242;
+          --gray-800: #303030;
+          --gray-900: #212121;
+          --gray-950: #121212;
           
-          /* Enhanced Dark Theme Support */
+          /* Clean Surface Colors */
           --surface: #ffffff;
-          --surface-hover: #f9fafb;
-          --surface-active: #f3f4f6;
-          --border: #e5e7eb;
-          --border-hover: #d1d5db;
+          --surface-hover: #F5F5F5;
+          --surface-active: #EEEEEE;
+          --border: #E0E0E0;
+          --border-hover: #BDBDBD;
           --border-focus: var(--primary);
           
-          /* Method-specific colors */
-          --method-get: #10b981;
-          --method-post: #3b82f6;
-          --method-put: #f59e0b;
-          --method-delete: #ef4444;
-          --method-patch: #8b5cf6;
-          --method-head: #06b6d4;
-          --method-options: #6b7280;
+          /* Method Colors (Postman-style) */
+          --method-get: #00C853;
+          --method-post: #FF6C37;
+          --method-put: #2196F3;
+          --method-delete: #F44336;
+          --method-patch: #9C27B0;
+          --method-head: #00BCD4;
+          --method-options: #757575;
           
-          /* Glassmorphism Colors */
-          --glass-bg: rgba(255, 255, 255, 0.85);
-          --glass-border: rgba(255, 255, 255, 0.2);
-          --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+          /* Minimal Glassmorphism */
+          --glass-bg: rgba(255, 255, 255, 0.98);
+          --glass-border: rgba(0, 0, 0, 0.08);
+          --glass-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
           
-          /* Enhanced Gradients */
-          --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-          --gradient-secondary: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-          --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
-          --gradient-error: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-          --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-          --gradient-card: linear-gradient(145deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
-          --gradient-bg: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-          --gradient-header: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+          /* Clean Professional Gradients */
+          --gradient-primary: linear-gradient(135deg, #FF6C37 0%, #E85C2A 100%);
+          --gradient-secondary: linear-gradient(135deg, #5F6368 0%, #4A4D50 100%);
+          --gradient-success: linear-gradient(135deg, #00C853 0%, #00A843 100%);
+          --gradient-error: linear-gradient(135deg, #F44336 0%, #D32F2F 100%);
+          --gradient-warning: linear-gradient(135deg, #FFA726 0%, #FB8C00 100%);
+          --gradient-card: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+          --gradient-bg: #F5F5F5;
+          --gradient-header: linear-gradient(135deg, #FF6C37 0%, #E85C2A 100%);
           
-          /* Enhanced Shadows */
-          --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-          --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-          --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-          --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-          --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-          --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-          --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
-          --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
-          --shadow-colored: 0 20px 25px -5px rgba(59, 130, 246, 0.1), 0 10px 10px -5px rgba(59, 130, 246, 0.04);
+          /* Professional Shadows (Postman-like) */
+          --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
+          --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+          --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.08);
+          --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.08);
+          --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.08);
+          --shadow-2xl: 0 16px 32px rgba(0, 0, 0, 0.08);
+          --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+          --shadow-glass: 0 2px 8px rgba(0, 0, 0, 0.08);
+          --shadow-colored: 0 4px 12px rgba(255, 108, 55, 0.15);
+          --shadow-glow: 0 0 0 3px rgba(255, 108, 55, 0.1);
           
-          /* Professional Border Radius */
+          /* Clean Border Radius */
           --radius-xs: 4px;
           --radius-sm: 6px;
           --radius: 8px;
-          --radius-md: 12px;
-          --radius-lg: 16px;
-          --radius-xl: 20px;
-          --radius-2xl: 24px;
-          --radius-3xl: 32px;
+          --radius-md: 10px;
+          --radius-lg: 12px;
+          --radius-xl: 16px;
+          --radius-2xl: 20px;
+          --radius-3xl: 24px;
           --radius-full: 9999px;
           
-          /* Optimized Smooth Transitions & Animations */
-          --transition-fast: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
-          --transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-          --transition-slow: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-          --transition-bounce: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-          --transition-elastic: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          --transition-spring: all 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-          --transition-smooth: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+          /* Fast Transitions - No Delays */
+          --transition-fast: all 0.08s ease;
+          --transition: all 0.1s ease;
+          --transition-slow: all 0.15s ease;
+          --transition-bounce: all 0.1s ease;
+          --transition-elastic: all 0.15s ease;
+          --transition-spring: all 0.1s ease;
+          --transition-smooth: all 0.15s ease;
           
-          /* Typography */
-          --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-          --font-mono: 'JetBrains Mono', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+          /* Professional Typography */
+          --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+          --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
           
           /* Spacing Scale */
           --space-px: 1px;
@@ -132,121 +128,15 @@ export function getWebviewContent(initialState: any): string {
           --space-20: 5rem;
         }
 
-        /* Enhanced Keyframe Animations */
+        /* Minimal Fast Animations Only */
         @keyframes fadeIn {
-          from { 
-            opacity: 0; 
-            transform: translateY(20px); 
-          }
-          to { 
-            opacity: 1; 
-            transform: translateY(0); 
-          }
-        }
-
-        @keyframes slideInFromLeft {
-          from { 
-            opacity: 0; 
-            transform: translateX(-30px); 
-          }
-          to { 
-            opacity: 1; 
-            transform: translateX(0); 
-          }
-        }
-
-        @keyframes slideInFromRight {
-          from { 
-            opacity: 0; 
-            transform: translateX(30px); 
-          }
-          to { 
-            opacity: 1; 
-            transform: translateX(0); 
-          }
-        }
-
-        @keyframes scaleIn {
-          from { 
-            opacity: 0; 
-            transform: scale(0.9); 
-          }
-          to { 
-            opacity: 1; 
-            transform: scale(1); 
-          }
-        }
-
-        @keyframes bounceIn {
-          0% { 
-            opacity: 0; 
-            transform: scale(0.3); 
-          }
-          50% { 
-            opacity: 1; 
-            transform: scale(1.05); 
-          }
-          70% { 
-            transform: scale(0.9); 
-          }
-          100% { 
-            transform: scale(1); 
-          }
-        }
-
-        @keyframes pulse {
-          0%, 100% { 
-            transform: scale(1); 
-          }
-          50% { 
-            transform: scale(1.05); 
-          }
-        }
-
-        @keyframes ripple {
-          0% { 
-            transform: scale(0); 
-            opacity: 0.8; 
-          }
-          100% { 
-            transform: scale(2); 
-            opacity: 0; 
-          }
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
 
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
-
-        @keyframes slideInFade {
-          0% { transform: translateY(100px) scale(0.8); opacity: 0; }
-          15%, 85% { transform: translateY(0) scale(1); opacity: 1; }
-          100% { transform: translateY(-100px) scale(0.8); opacity: 0; }
-        }
-
-        @keyframes shimmer {
-          0% { background-position: -200px 0; }
-          100% { background-position: calc(200px + 100%) 0; }
-        }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-6px); }
-        }
-
-        @keyframes glow {
-          0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
-          50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8); }
-        }
-
-        /* Advanced Loading States */
-        @keyframes skeletonLoading {
-          0% { background-position: -200px 0; }
-          100% { background-position: calc(200px + 100%) 0; }
-        }
-
-        @keyframes progressBar {
-          0% { width: 0%; }
           100% { width: 100%; }
         }
 
@@ -553,250 +443,61 @@ export function getWebviewContent(initialState: any): string {
           box-sizing: border-box;
         }
 
-        /* Optimized Body for Fast Loading */
+        /* Clean Professional Body (Postman-style) */
         body {
           font-family: var(--font-family);
-          line-height: 1.6;
-          background: #f9fafb;
+          line-height: 1.5;
+          background: #F5F5F5;
           color: var(--gray-900);
           min-height: 100vh;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
           margin: 0;
           padding: 0;
-          transform: translateZ(0);
-          will-change: auto;
         }
 
-        /* Removed complex background animation for faster loading */
-
-        /* Enhanced Professional Header */
-        .header {
-          background: var(--gradient-header);
-          padding: var(--space-6) var(--space-4);
-          margin-bottom: var(--space-8);
-          position: relative;
-          overflow: hidden;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-          animation: slideInFromLeft 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        /* Removed complex header background for faster loading */
-
-        .header-content {
-          position: relative;
-          z-index: 1;
-          max-width: 1400px;
-          margin: 0 auto;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          gap: var(--space-4);
-        }
-
-        .header-brand {
-          display: flex;
-          align-items: center;
-          gap: var(--space-3);
-          animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.3s both;
-        }
-
-        .header-icon {
-          width: 40px;
-          height: 40px;
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: var(--radius-lg);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 1.5rem;
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          transition: var(--transition-elastic);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .header-icon:hover {
-          transform: scale(1.1) rotate(5deg);
-          box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
-          animation: glow 2s ease-in-out infinite;
-        }
-
-        .header-icon::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-          transition: left 0.5s;
-        }
-
-        .header-icon:hover::before {
-          left: 100%;
-        }
-
-        .header-title {
-          font-size: 1.75rem;
-          font-weight: 800;
-          color: white;
-          letter-spacing: -0.025em;
-          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          animation: slideInFromRight 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.2s both;
-        }
-
-        .header-subtitle {
-          font-size: 0.875rem;
-          color: rgba(255, 255, 255, 0.8);
-          font-weight: 400;
-          margin-top: -2px;
-          animation: fadeIn 0.8s ease-out 0.5s both;
-        }
-
-        .header-actions {
-          display: flex;
-          gap: var(--space-3);
-          align-items: center;
-          animation: slideInFromRight 0.8s cubic-bezier(0.23, 1, 0.32, 1) 0.4s both;
-        }
-
-        .header-button {
-          padding: var(--space-2) var(--space-4);
-          background: var(--glass-bg);
-          color: white;
-          border: 1px solid var(--glass-border);
-          border-radius: var(--radius-full);
-          font-weight: 500;
-          cursor: pointer;
-          transition: var(--transition-elastic);
-          backdrop-filter: blur(10px);
-          display: flex;
-          align-items: center;
-          gap: var(--space-2);
-          font-size: 0.875rem;
-          text-decoration: none;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .header-button:hover {
-          background: rgba(255, 255, 255, 0.3);
-          transform: translateY(-2px) scale(1.02);
-          box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
-        }
-
-        .header-button:active {
-          transform: translateY(0) scale(0.98);
-        }
-
-        .header-button::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 0;
-          height: 0;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.3);
-          transform: translate(-50%, -50%);
-          transition: width 0.6s, height 0.6s;
-        }
-
-        .header-button:hover::after {
-          width: 300px;
-          height: 300px;
-        }
-
-        /* Optimized Main Container */
+        /* Clean Main Container */
         .main-container {
           max-width: 1400px;
           margin: 0 auto;
-          padding: 0 var(--space-4) var(--space-8);
+          padding: var(--space-4);
           position: relative;
-          contain: layout style;
         }
 
-        /* Enhanced Request Card with Advanced Animations */
+        /* Clean Professional Request Card (Postman-style) */
         .request-card {
-          background: rgba(255, 255, 255, 0.95);
-          border-radius: var(--radius-2xl);
-          box-shadow: 
-            0 20px 25px -5px rgba(0, 0, 0, 0.1),
-            0 10px 10px -5px rgba(0, 0, 0, 0.04),
-            0 0 0 1px rgba(255, 255, 255, 0.05);
+          background: #ffffff;
+          border-radius: var(--radius);
+          box-shadow: var(--shadow-sm);
           overflow: hidden;
-          margin-bottom: var(--space-8);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          backdrop-filter: blur(20px);
-          transition: var(--transition);
-          position: relative;
-        }
-
-        .request-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 4px;
-          background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 50%, var(--success) 100%);
-          background-size: 200% 100%;
-          animation: shimmer 3s ease-in-out infinite;
-        }
-
-        .request-card::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-          pointer-events: none;
-          border-radius: var(--radius-2xl);
-          opacity: 0;
+          margin-bottom: var(--space-4);
+          border: 1px solid var(--border);
           transition: var(--transition);
         }
 
         .request-card:hover {
-          transform: translateY(-2px);
-          box-shadow: var(--shadow-xl);
-        }
-
-        .request-card:hover::after {
-          opacity: 1;
+          box-shadow: var(--shadow-md);
         }
 
         .card-header {
-          padding: var(--space-6);
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(79, 70, 229, 0.03) 100%);
-          border-bottom: 1px solid var(--gray-200);
-          position: relative;
-          animation: slideInFromLeft 0.6s ease-out 0.8s both;
+          padding: var(--space-4) var(--space-5);
+          background: #ffffff;
+          border-bottom: 1px solid var(--border);
         }
 
         .card-title {
-          font-size: 1.5rem;
-          font-weight: 700;
+          font-size: 1.125rem;
+          font-weight: 600;
           color: var(--gray-900);
-          margin-bottom: var(--space-2);
+          margin: 0;
           display: flex;
           align-items: center;
-          gap: var(--space-3);
-          letter-spacing: -0.025em;
+          gap: var(--space-2);
         }
 
         .card-title .material-icons {
-          background: var(--gradient-primary);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-          font-size: 1.75rem;
-          animation: pulse 2s ease-in-out infinite;
+          color: var(--primary);
+          font-size: 1.25rem;
         }
 
         .card-description {
@@ -2334,84 +2035,192 @@ export function getWebviewContent(initialState: any): string {
           color: #6b7280;
           font-style: italic;
         }
+
+        /* Clean Professional Request Type Tabs (Postman-style) */
+        .request-type-tabs {
+          display: flex;
+          gap: 0;
+          margin-bottom: var(--space-4);
+          border-bottom: 2px solid var(--border);
+        }
+
+        .type-tab {
+          padding: var(--space-3) var(--space-5);
+          cursor: pointer;
+          font-weight: 500;
+          font-size: 0.9375rem;
+          color: var(--gray-600);
+          transition: var(--transition);
+          position: relative;
+          background: transparent;
+          border: none;
+          border-bottom: 2px solid transparent;
+          margin-bottom: -2px;
+        }
+
+        .type-tab:hover {
+          color: var(--gray-900);
+          background: var(--gray-50);
+        }
+
+        .type-tab.active {
+          color: var(--primary);
+          border-bottom-color: var(--primary);
+          font-weight: 600;
+        }
+
+        .request-content {
+          display: none;
+        }
+
+        .request-content.active {
+          display: block;
+        }
       </style>
     </head>
     <body>
       <!-- Main Content Container -->
       <div class="main-container">
-        <!-- Request Card -->
-        <div class="request-card">
-          <div class="card-header">
-            <h2 class="card-title">
+        <!-- Request Type Tabs -->
+        <div class="request-type-tabs">
+          <div class="type-tab active" onclick="switchRequestType('rest')" data-type="rest">REST</div>
+          <div class="type-tab" onclick="switchRequestType('graphql')" data-type="graphql">GraphQL</div>
+        </div>
+
+        <!-- REST Content -->
+        <div id="rest-content" class="request-content active">
+          <!-- Request Card -->
+          <div class="request-card">
+            <div class="card-header">
+              <h2 class="card-title">
+                <span class="material-icons">http</span>
+                REST TEST
+              </h2>
+            </div>
+
+            <div class="request-row">
+              <select id="method-select" class="method-select">
+                <option value="GET" ${initialState.method === 'GET' ? 'selected' : ''}>GET</option>
+                <option value="POST" ${initialState.method === 'POST' ? 'selected' : ''}>POST</option>
+                <option value="PUT" ${initialState.method === 'PUT' ? 'selected' : ''}>PUT</option>
+                <option value="DELETE" ${initialState.method === 'DELETE' ? 'selected' : ''}>DELETE</option>
+                <option value="PATCH" ${initialState.method === 'PATCH' ? 'selected' : ''}>PATCH</option>
+                <option value="HEAD" ${initialState.method === 'HEAD' ? 'selected' : ''}>HEAD</option>
+                <option value="OPTIONS" ${initialState.method === 'OPTIONS' ? 'selected' : ''}>OPTIONS</option>
+              </select>
+              <div class="url-input-wrapper">
+                <input type="text" id="url-input" class="url-input" placeholder="https://api.example.com/endpoint" value="${initialState.url || ''}">
+              </div>
+              <div class="action-buttons">
+                <button id="save-btn" class="save-button">
+                    <span class="material-icons">bookmark</span>
+                  Save
+                </button>
+                <button id="send-btn" class="send-button">
+                  <span class="material-icons">send</span>
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tabs">
+            <div class="tab active" data-tab="params">
+                <span class="material-icons">tune</span>
+                Parameters
+            </div>
+            <div class="tab" data-tab="headers">
               <span class="material-icons">http</span>
-              REST TEST
-            </h2>
+              Headers
+            </div>
+            <div class="tab" data-tab="body">
+              <span class="material-icons">data_object</span>
+                Request Body
+            </div>
           </div>
 
-        <div class="request-row">
-          <select id="method-select" class="method-select">
-            <option value="GET" ${initialState.method === 'GET' ? 'selected' : ''}>GET</option>
-            <option value="POST" ${initialState.method === 'POST' ? 'selected' : ''}>POST</option>
-            <option value="PUT" ${initialState.method === 'PUT' ? 'selected' : ''}>PUT</option>
-            <option value="DELETE" ${initialState.method === 'DELETE' ? 'selected' : ''}>DELETE</option>
-            <option value="PATCH" ${initialState.method === 'PATCH' ? 'selected' : ''}>PATCH</option>
-            <option value="HEAD" ${initialState.method === 'HEAD' ? 'selected' : ''}>HEAD</option>
-            <option value="OPTIONS" ${initialState.method === 'OPTIONS' ? 'selected' : ''}>OPTIONS</option>
-          </select>
-          <div class="url-input-wrapper">
-            <span class="material-icons">link</span>
-            <input type="text" id="url-input" class="url-input" placeholder="https://api.example.com/endpoint" value="${initialState.url || ''}">
-          </div>
-          <div class="action-buttons">
-            <button id="save-btn" class="save-button">
-                <span class="material-icons">bookmark</span>
-              Save
-            </button>
-            <button id="send-btn" class="send-button">
-              <span class="material-icons">send</span>
-              Send
-            </button>
+          <div class="tab-content">
+            <div id="params-section" class="content-section active">
+              <div id="queryParams" class="param-rows"></div>
+              <button class="add-param-button" onclick="addParamRow('queryParams')">
+                  <span class="material-icons">add_circle</span>
+                  Add Query Parameter
+              </button>
+            </div>
+
+            <div id="headers-section" class="content-section">
+              <div id="headers" class="param-rows"></div>
+              <button class="add-param-button" onclick="addParamRow('headers')">
+                  <span class="material-icons">add_circle</span>
+                Add Header
+              </button>
+            </div>
+
+            <div id="body-section" class="content-section">
+                <textarea id="body" placeholder="{\n  \"key\": \"value\",\n  \"message\": \"Hello, World!\"\n}" rows="12"></textarea>
+            </div>
           </div>
         </div>
 
-        <div class="tabs">
-          <div class="tab active" data-tab="params">
-              <span class="material-icons">tune</span>
-              Parameters
+        <!-- GraphQL Content -->
+        <div id="graphql-content" class="request-content">
+          <div class="request-card">
+            <div class="card-header">
+              <h2 class="card-title">
+                <span class="material-icons">hub</span>
+                GraphQL
+              </h2>
+            </div>
+            <div class="request-row">
+              <div class="url-input-wrapper" style="grid-column: 1 / -2;">
+                <input type="text" id="graphql-url-input" class="url-input" placeholder="https://api.example.com/graphql" value="${initialState.graphqlUrl || ''}">
+              </div>
+              <div class="action-buttons">
+                <button id="graphql-save-btn" class="save-button">
+                    <span class="material-icons">bookmark</span>
+                    Save
+                </button>
+                <button id="graphql-send-btn" class="send-button">
+                    <span class="material-icons">send</span>
+                    Send
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="tab" data-tab="headers">
-            <span class="material-icons">http</span>
-            Headers
+
+          <div class="tabs">
+            <div class="tab active" data-tab="query" onclick="switchGraphQLTab('query')">
+                <span class="material-icons">code</span>
+                Query
+            </div>
+            <div class="tab" data-tab="variables" onclick="switchGraphQLTab('variables')">
+                <span class="material-icons">data_object</span>
+                Variables
+            </div>
+            <div class="tab" data-tab="graphql-headers" onclick="switchGraphQLTab('graphql-headers')">
+                <span class="material-icons">http</span>
+                Headers
+            </div>
           </div>
-          <div class="tab" data-tab="body">
-            <span class="material-icons">data_object</span>
-              Request Body
+
+          <div class="tab-content">
+            <div id="query-section" class="content-section active">
+                <textarea id="graphql-query" placeholder="query { ... }" rows="12">${initialState.graphqlQuery || ''}</textarea>
+            </div>
+            <div id="variables-section" class="content-section">
+                <textarea id="graphql-variables" placeholder="{ ... }" rows="12">${initialState.graphqlVariables || ''}</textarea>
+            </div>
+            <div id="graphql-headers-section" class="content-section">
+                <div id="graphql-headers" class="param-rows"></div>
+                <button class="add-param-button" onclick="addParamRow('graphql-headers')">
+                    <span class="material-icons">add_circle</span>
+                    Add Header
+                </button>
+            </div>
           </div>
         </div>
-
-        <div class="tab-content">
-          <div id="params-section" class="content-section active">
-            <div id="queryParams" class="param-rows"></div>
-            <button class="add-param-button" onclick="addParamRow('queryParams')">
-                <span class="material-icons">add_circle</span>
-                Add Query Parameter
-            </button>
-          </div>
-
-          <div id="headers-section" class="content-section">
-            <div id="headers" class="param-rows"></div>
-            <button class="add-param-button" onclick="addParamRow('headers')">
-                <span class="material-icons">add_circle</span>
-              Add Header
-            </button>
-          </div>
-
-          <div id="body-section" class="content-section">
-              <textarea id="body" placeholder="{\n  \"key\": \"value\",\n  \"message\": \"Hello, World!\"\n}" rows="12"></textarea>
-          </div>
-        </div>
-
-        <div id="responseContainer" style="display: none;">
+      </div>
+      <div id="responseContainer" style="display: none;">
           <div id="responseBox" class="response-container">
             <div id="responseHeader" class="response-header">
               <div class="response-status">
@@ -3689,6 +3498,52 @@ export function getWebviewContent(initialState: any): string {
 
         // Removed enhanced parameter row animations for better performance
 
+        // Request Type Switching
+        function switchRequestType(type) {
+          currentState.type = type;
+          
+          // Update tabs
+          document.querySelectorAll('.type-tab').forEach(tab => {
+            if (tab.dataset.type === type) {
+              tab.classList.add('active');
+            } else {
+              tab.classList.remove('active');
+            }
+          });
+
+          // Update content visibility
+          document.querySelectorAll('.request-content').forEach(content => {
+            content.classList.remove('active');
+          });
+          
+          if (type === 'graphql') {
+            document.getElementById('graphql-content').classList.add('active');
+          } else {
+            document.getElementById('rest-content').classList.add('active');
+          }
+          
+          saveState();
+        }
+
+        function switchGraphQLTab(tabId) {
+          const tabs = document.querySelectorAll('#graphql-content .tab');
+          const sections = document.querySelectorAll('#graphql-content .content-section');
+          
+          tabs.forEach(tab => tab.classList.remove('active'));
+          sections.forEach(section => section.classList.remove('active'));
+          
+          document.querySelector(\`[data-tab="\${tabId}"]\`).classList.add('active');
+          
+          // Map tab IDs to section IDs
+          const sectionMap = {
+            'query': 'query-section',
+            'variables': 'variables-section',
+            'graphql-headers': 'graphql-headers-section'
+          };
+          
+          document.getElementById(sectionMap[tabId]).classList.add('active');
+        }
+
         // Enhanced method select with smooth transitions
         function updateMethodSelectColorEnhanced() {
           const select = document.getElementById('method-select');
@@ -3715,6 +3570,113 @@ export function getWebviewContent(initialState: any): string {
           select.style.background = colors[method] || 'var(--gray-500)';
         }
 
+        function sendGraphQLRequest() {
+          const url = document.getElementById('graphql-url-input').value;
+          const query = document.getElementById('graphql-query').value;
+          const variables = document.getElementById('graphql-variables').value;
+          const headers = collectParams('graphql-headers');
+          const sendButton = document.getElementById('graphql-send-btn');
+
+          if (!url) {
+            showError('Please enter a GraphQL URL');
+            return;
+          }
+
+          if (!query) {
+            showError('Please enter a GraphQL Query');
+            return;
+          }
+
+          // Enhanced button feedback
+          const originalHtml = sendButton.innerHTML;
+          sendButton.innerHTML = '<span class="material-icons">sync</span>Sending...';
+          sendButton.disabled = true;
+
+          showLoading();
+          saveState();
+
+          vscode.postMessage({ 
+            type: 'sendRequest',
+            requestType: 'graphql',
+            method: 'POST', // GraphQL is always POST
+            url, 
+            headers, 
+            body: JSON.stringify({
+              query,
+              variables: variables ? JSON.parse(variables) : undefined
+            })
+          });
+          
+          // Reset button after a delay
+          setTimeout(() => {
+            sendButton.innerHTML = originalHtml;
+            sendButton.disabled = false;
+          }, 30000);
+        }
+
+        // Update saveState to include GraphQL fields
+        function saveState() {
+          currentState = {
+            type: document.querySelector('.type-tab.active').dataset.type,
+            method: document.getElementById('method-select').value,
+            url: document.getElementById('url-input').value,
+            body: document.getElementById('body').value,
+            queryParams: collectParamsArray('queryParams'),
+            headers: collectParamsArray('headers'),
+            graphqlUrl: document.getElementById('graphql-url-input').value,
+            graphqlQuery: document.getElementById('graphql-query').value,
+            graphqlVariables: document.getElementById('graphql-variables').value,
+            graphqlHeaders: collectParamsArray('graphql-headers')
+          };
+          
+          vscode.postMessage({
+            type: 'saveState',
+            state: currentState
+          });
+        }
+
+        // Update initializeForm to restore GraphQL fields
+        function initializeForm() {
+          // Restore request type
+          if (currentState.type) {
+            switchRequestType(currentState.type);
+          }
+
+          // REST fields
+          document.getElementById('method-select').value = currentState.method || 'GET';
+          document.getElementById('url-input').value = currentState.url || '';
+          document.getElementById('body').value = currentState.body || '';
+
+          // Update method select color on initialization
+          updateMethodSelectColor();
+
+          const queryParamsContainer = document.getElementById('queryParams');
+          queryParamsContainer.innerHTML = '';
+          (currentState.queryParams || []).forEach(param => addParamRow('queryParams', param));
+          if (!currentState.queryParams || currentState.queryParams.length === 0) {
+            addParamRow('queryParams');
+          }
+
+          const headersContainer = document.getElementById('headers');
+          headersContainer.innerHTML = '';
+          (currentState.headers || []).forEach(header => addParamRow('headers', header));
+          if (!currentState.headers || currentState.headers.length === 0) {
+            addParamRow('headers');
+          }
+
+          // GraphQL fields
+          document.getElementById('graphql-url-input').value = currentState.graphqlUrl || '';
+          document.getElementById('graphql-query').value = currentState.graphqlQuery || '';
+          document.getElementById('graphql-variables').value = currentState.graphqlVariables || '';
+
+          const graphqlHeadersContainer = document.getElementById('graphql-headers');
+          graphqlHeadersContainer.innerHTML = '';
+          (currentState.graphqlHeaders || []).forEach(header => addParamRow('graphql-headers', header));
+          if (!currentState.graphqlHeaders || currentState.graphqlHeaders.length === 0) {
+            addParamRow('graphql-headers');
+          }
+        }
+
         // Message handler for VS Code communication
         window.addEventListener('message', event => {
           const message = event.data;
@@ -3725,6 +3687,8 @@ export function getWebviewContent(initialState: any): string {
               console.log('Handling response:', message);
               document.getElementById('send-btn').innerHTML = '<span class="material-icons">send</span>Send';
               document.getElementById('send-btn').disabled = false;
+              document.getElementById('graphql-send-btn').innerHTML = '<span class="material-icons">send</span>Send';
+              document.getElementById('graphql-send-btn').disabled = false;
               showResponse(message.data, message.status, message.statusText, message.responseTime, message.headers || {});
               break;
               
@@ -3732,6 +3696,8 @@ export function getWebviewContent(initialState: any): string {
               console.log('Handling error:', message);
               document.getElementById('send-btn').innerHTML = '<span class="material-icons">send</span>Send';
               document.getElementById('send-btn').disabled = false;
+              document.getElementById('graphql-send-btn').innerHTML = '<span class="material-icons">send</span>Send';
+              document.getElementById('graphql-send-btn').disabled = false;
               showError(message.message, message.data, message.headers || {});
               break;
               
@@ -3743,6 +3709,17 @@ export function getWebviewContent(initialState: any): string {
             default:
               console.warn('Unknown message type:', message.type);
           }
+        });
+
+        // Add event listeners for GraphQL elements
+        document.addEventListener('DOMContentLoaded', () => {
+            // ... existing listeners ...
+            document.getElementById('graphql-send-btn').addEventListener('click', sendGraphQLRequest);
+            
+            // GraphQL input listeners for auto-save
+            document.getElementById('graphql-url-input').addEventListener('input', saveState);
+            document.getElementById('graphql-query').addEventListener('input', saveState);
+            document.getElementById('graphql-variables').addEventListener('input', saveState);
         });
       </script>
     </body>
