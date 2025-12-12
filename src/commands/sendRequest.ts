@@ -35,8 +35,11 @@ export function registerSendRequestCommand(
       method: 'GET',
       url: '',
       body: '',
-      headers: [{ key: '', value: '' }],
-      queryParams: [{ key: '', value: '' }]
+      headers: [
+        { key: 'Content-Type', value: 'application/json' },
+        { key: 'Accept', value: 'application/json' }
+      ],
+      queryParams: []
     });
 
     panel.webview.html = getWebviewContent(storedState);

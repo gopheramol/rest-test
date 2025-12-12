@@ -2555,41 +2555,72 @@ export function getWebviewContent(initialState: any): string {
         }
 
         function initializeForm() {
-          document.getElementById('method-select').value = currentState.method;
-          document.getElementById('url-input').value = currentState.url;
-          document.getElementById('body').value = currentState.body;
+          document.getElementById('method-select').value = currentState.method || 'GET';
+          document.getElementById('url-input').value = currentState.url || '';
+          document.getElementById('body').value = currentState.body || '';
 
           // Update method select color on initialization
           updateMethodSelectColor();
 
+          // Restore query parameters - handle empty arrays properly
           const queryParamsContainer = document.getElementById('queryParams');
           queryParamsContainer.innerHTML = '';
-          currentState.queryParams.forEach(param => addParamRow('queryParams', param));
-          if (currentState.queryParams.length === 0) {
+          if (currentState.queryParams && Array.isArray(currentState.queryParams) && currentState.queryParams.length > 0) {
+            currentState.queryParams.forEach(param => {
+              if (param && (param.key || param.value)) {
+                addParamRow('queryParams', param);
+              }
+            });
+          }
+          // Always ensure at least one empty row exists
+          if (queryParamsContainer.children.length === 0) {
             addParamRow('queryParams');
           }
 
+          // Restore headers - handle empty arrays properly
           const headersContainer = document.getElementById('headers');
           headersContainer.innerHTML = '';
-          currentState.headers.forEach(header => addParamRow('headers', header));
-          if (currentState.headers.length === 0) {
+          if (currentState.headers && Array.isArray(currentState.headers) && currentState.headers.length > 0) {
+            currentState.headers.forEach(header => {
+              if (header && (header.key || header.value)) {
+                addParamRow('headers', header);
+              }
+            });
+          }
+          // Always ensure at least one empty row exists
+          if (headersContainer.children.length === 0) {
             addParamRow('headers');
           }
         }
 
+        let saveStateTimeout = null;
+        
         function saveState() {
-          currentState = {
-            method: document.getElementById('method-select').value,
-            url: document.getElementById('url-input').value,
-            body: document.getElementById('body').value,
-            queryParams: collectParamsArray('queryParams'),
-            headers: collectParamsArray('headers')
-          };
+          // Clear existing timeout
+          if (saveStateTimeout) {
+            clearTimeout(saveStateTimeout);
+          }
           
-          vscode.postMessage({
-            type: 'saveState',
-            state: currentState
-          });
+          // Debounce save to avoid excessive writes
+          saveStateTimeout = setTimeout(() => {
+            currentState = {
+              type: document.querySelector('.type-tab.active').dataset.type,
+              method: document.getElementById('method-select').value,
+              url: document.getElementById('url-input').value,
+              body: document.getElementById('body').value,
+              queryParams: collectParamsArray('queryParams'),
+              headers: collectParamsArray('headers'),
+              graphqlUrl: document.getElementById('graphql-url-input').value,
+              graphqlQuery: document.getElementById('graphql-query').value,
+              graphqlVariables: document.getElementById('graphql-variables').value,
+              graphqlHeaders: collectParamsArray('graphql-headers')
+            };
+            
+            vscode.postMessage({
+              type: 'saveState',
+              state: currentState
+            });
+          }, 300); // 300ms debounce
         }
 
         function addParamRow(containerId, initialValue = { key: '', value: '' }) {
@@ -2610,6 +2641,8 @@ export function getWebviewContent(initialState: any): string {
             input.addEventListener('input', () => {
               if (containerId === 'queryParams') {
                 updateURLWithParams();
+              } else if (containerId === 'graphql-headers') {
+                saveState();
               } else {
                 saveState();
               }
@@ -2657,10 +2690,12 @@ export function getWebviewContent(initialState: any): string {
           setTimeout(() => {
             container.removeChild(row);
             
+            // Always ensure at least one empty row exists
             if (container.children.length === 0) {
               addParamRow(container.id);
             }
             
+            // Save state after removal
             if (container.id === 'queryParams') {
               updateURLWithParams();
             } else {
@@ -2873,6 +2908,7 @@ export function getWebviewContent(initialState: any): string {
             const inputs = row.getElementsByTagName('input');
             const key = inputs[0].value.trim();
             const value = inputs[1].value.trim();
+            // Only include non-empty parameters to avoid cluttering storage
             if (key || value) {
               params.push({ key, value });
             }
@@ -3614,26 +3650,7 @@ export function getWebviewContent(initialState: any): string {
           }, 30000);
         }
 
-        // Update saveState to include GraphQL fields
-        function saveState() {
-          currentState = {
-            type: document.querySelector('.type-tab.active').dataset.type,
-            method: document.getElementById('method-select').value,
-            url: document.getElementById('url-input').value,
-            body: document.getElementById('body').value,
-            queryParams: collectParamsArray('queryParams'),
-            headers: collectParamsArray('headers'),
-            graphqlUrl: document.getElementById('graphql-url-input').value,
-            graphqlQuery: document.getElementById('graphql-query').value,
-            graphqlVariables: document.getElementById('graphql-variables').value,
-            graphqlHeaders: collectParamsArray('graphql-headers')
-          };
-          
-          vscode.postMessage({
-            type: 'saveState',
-            state: currentState
-          });
-        }
+        // This function is now defined above, removing duplicate
 
         // Update initializeForm to restore GraphQL fields
         function initializeForm() {
@@ -3650,17 +3667,33 @@ export function getWebviewContent(initialState: any): string {
           // Update method select color on initialization
           updateMethodSelectColor();
 
+          // Restore query parameters - handle empty arrays properly
           const queryParamsContainer = document.getElementById('queryParams');
           queryParamsContainer.innerHTML = '';
-          (currentState.queryParams || []).forEach(param => addParamRow('queryParams', param));
-          if (!currentState.queryParams || currentState.queryParams.length === 0) {
+          if (currentState.queryParams && Array.isArray(currentState.queryParams) && currentState.queryParams.length > 0) {
+            currentState.queryParams.forEach(param => {
+              if (param && (param.key || param.value)) {
+                addParamRow('queryParams', param);
+              }
+            });
+          }
+          // Always ensure at least one empty row exists
+          if (queryParamsContainer.children.length === 0) {
             addParamRow('queryParams');
           }
 
+          // Restore headers - handle empty arrays properly
           const headersContainer = document.getElementById('headers');
           headersContainer.innerHTML = '';
-          (currentState.headers || []).forEach(header => addParamRow('headers', header));
-          if (!currentState.headers || currentState.headers.length === 0) {
+          if (currentState.headers && Array.isArray(currentState.headers) && currentState.headers.length > 0) {
+            currentState.headers.forEach(header => {
+              if (header && (header.key || header.value)) {
+                addParamRow('headers', header);
+              }
+            });
+          }
+          // Always ensure at least one empty row exists
+          if (headersContainer.children.length === 0) {
             addParamRow('headers');
           }
 
@@ -3669,10 +3702,18 @@ export function getWebviewContent(initialState: any): string {
           document.getElementById('graphql-query').value = currentState.graphqlQuery || '';
           document.getElementById('graphql-variables').value = currentState.graphqlVariables || '';
 
+          // Restore GraphQL headers - handle empty arrays properly
           const graphqlHeadersContainer = document.getElementById('graphql-headers');
           graphqlHeadersContainer.innerHTML = '';
-          (currentState.graphqlHeaders || []).forEach(header => addParamRow('graphql-headers', header));
-          if (!currentState.graphqlHeaders || currentState.graphqlHeaders.length === 0) {
+          if (currentState.graphqlHeaders && Array.isArray(currentState.graphqlHeaders) && currentState.graphqlHeaders.length > 0) {
+            currentState.graphqlHeaders.forEach(header => {
+              if (header && (header.key || header.value)) {
+                addParamRow('graphql-headers', header);
+              }
+            });
+          }
+          // Always ensure at least one empty row exists
+          if (graphqlHeadersContainer.children.length === 0) {
             addParamRow('graphql-headers');
           }
         }
