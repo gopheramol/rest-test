@@ -1007,133 +1007,197 @@ export function getWebviewContent(initialState: any): string {
         }
 
         /* Enhanced Parameter Rows with Smooth Animations */
+        .param-table {
+          display: flex;
+          flex-direction: column;
+          border: 1px solid var(--gray-200);
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+          margin-bottom: var(--space-4);
+          background: white;
+        }
+
+        .param-table-header {
+          display: grid;
+          grid-template-columns: 50px 1fr 1fr 50px;
+          gap: 0;
+          background: var(--gray-50);
+          border-bottom: 1px solid var(--gray-200);
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--gray-600);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .param-table-header span {
+          padding: var(--space-3) var(--space-4);
+          border-right: 1px solid var(--gray-200);
+        }
+
+        .param-table-header span:last-child {
+          border-right: none;
+        }
+
         .param-rows {
           display: flex;
           flex-direction: column;
-          gap: var(--space-3);
-          margin-bottom: var(--space-4);
         }
 
         .param-row {
           display: grid;
-          grid-template-columns: 1fr 1fr auto;
-          gap: var(--space-3);
+          grid-template-columns: 50px 1fr 1fr 50px;
+          gap: 0;
           align-items: center;
-          padding: var(--space-4);
           background: white;
-          border: 1px solid var(--gray-200);
-          border-radius: var(--radius-lg);
+          border-bottom: 1px solid var(--gray-200);
           transition: var(--transition);
           position: relative;
-          overflow: hidden;
-          contain: layout;
-          will-change: transform;
         }
 
-        .param-row::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.05), transparent);
-          transition: left 0.6s ease-out;
-        }
-
-        .param-row:hover::before {
-          left: 100%;
+        .param-row:last-child {
+          border-bottom: none;
         }
 
         .param-row:hover {
-          border-color: var(--gray-300);
-          box-shadow: var(--shadow-sm);
-          transform: translateY(-1px);
-          z-index: 2;
-          position: relative;
+          background: var(--gray-50);
         }
 
-        .param-row input {
-          width: 100%;
-          padding: var(--space-3) var(--space-4);
-          border: 1px solid var(--gray-200);
-          border-radius: var(--radius);
+        .param-row.disabled {
           background: var(--gray-50);
+        }
+
+        .param-row.disabled input[type="text"] {
+          color: var(--gray-400);
+          text-decoration: line-through;
+        }
+
+        .param-row > * {
+          padding: var(--space-3) var(--space-4);
+          border-right: 1px solid var(--gray-200);
+          height: 100%;
+          display: flex;
+          align-items: center;
+        }
+
+        .param-row > *:last-child {
+          border-right: none;
+          justify-content: center;
+        }
+
+        .param-checkbox-wrapper {
+          justify-content: center;
+          display: flex;
+          align-items: center;
+          min-height: 44px;
+        }
+
+
+        /* Custom Postman-style checkbox */
+        .param-checkbox {
+          -webkit-appearance: none;
+          -moz-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          min-width: 20px;
+          min-height: 20px;
+          max-width: 20px;
+          max-height: 20px;
+          flex-shrink: 0;
+          border: 2px solid var(--gray-300);
+          border-radius: 4px;
+          background: white;
+          cursor: pointer;
+          margin: 0;
+          position: relative;
+          transition: all 0.15s ease;
+          box-sizing: border-box;
+        }
+
+        .param-checkbox:hover {
+          border-color: var(--primary);
+        }
+
+        .param-checkbox:checked {
+          background: var(--primary);
+          border-color: var(--primary);
+        }
+
+        .param-checkbox:checked::after {
+          content: '';
+          position: absolute;
+          left: 5px;
+          top: 1px;
+          width: 5px;
+          height: 10px;
+          border: solid white;
+          border-width: 0 2px 2px 0;
+          transform: rotate(45deg);
+        }
+
+        .param-checkbox:focus {
+          outline: none;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+
+
+
+        .param-row input[type="text"] {
+          width: 100%;
+          padding: 0;
+          border: none;
+          background: transparent;
           color: var(--gray-900);
           font-size: 0.875rem;
           font-family: var(--font-family);
           transition: var(--transition);
-          position: relative;
         }
 
-        .param-row input:hover {
-          border-color: var(--gray-300);
-          background: white;
-          transform: translateY(-1px);
-        }
-
-        .param-row input:focus {
+        .param-row input[type="text"]:focus {
           outline: none;
-          border-color: var(--primary);
-          background: white;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), var(--shadow-sm);
-          transform: translateY(-2px) scale(1.01);
         }
 
-        .param-row input::placeholder {
+        .param-row input[type="text"]::placeholder {
           color: var(--gray-400);
           font-weight: 400;
-          transition: var(--transition);
         }
 
-        .param-row input:focus::placeholder {
-          color: var(--gray-300);
-          transform: translateY(-1px);
+
+        .param-input-cell {
+          flex: 1;
+        }
+
+        .param-action-cell {
+          width: 40px;
+          padding: var(--space-2) !important;
         }
 
         .remove-param-button {
-          width: 36px;
-          height: 36px;
-          background: var(--gradient-error);
-          color: white;
+          width: 28px;
+          height: 28px;
+          background: transparent;
+          color: var(--error);
           border: none;
-          border-radius: var(--radius-lg);
+          border-radius: var(--radius);
           cursor: pointer;
           transition: var(--transition);
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .remove-param-button::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: var(--radius-lg);
-          transform: scale(0);
-          transition: transform 0.3s ease-out;
-        }
-
-        .remove-param-button:hover::before {
-          transform: scale(1);
         }
 
         .remove-param-button:hover {
-          transform: scale(1.1);
-          box-shadow: var(--shadow-md);
-          z-index: 3;
+          background: var(--error);
+          color: white;
         }
 
         .remove-param-button:active {
-          transform: scale(1.05) rotate(0deg);
+          transform: scale(0.95);
         }
+
 
         .remove-param-button .material-icons {
           font-size: 1rem;
@@ -2109,8 +2173,9 @@ export function getWebviewContent(initialState: any): string {
                 <option value="OPTIONS" ${initialState.method === 'OPTIONS' ? 'selected' : ''}>OPTIONS</option>
               </select>
               <div class="url-input-wrapper">
-                <input type="text" id="url-input" class="url-input" placeholder="https://api.example.com/endpoint" value="${initialState.url || ''}">
+                <input type="text" id="url-input" class="url-input" placeholder="https://api.example.com/endpoint" value="${initialState.url || ''}" oninput="debouncedParseURL()" onpaste="setTimeout(parseQueryParamsFromURL, 100)">
               </div>
+
               <div class="action-buttons">
                 <button id="save-btn" class="save-button">
                     <span class="material-icons">bookmark</span>
@@ -2141,20 +2206,39 @@ export function getWebviewContent(initialState: any): string {
 
           <div class="tab-content">
             <div id="params-section" class="content-section active">
-              <div id="queryParams" class="param-rows"></div>
+              <div class="param-table">
+                <div class="param-table-header">
+                  <span></span>
+                  <span>Key</span>
+                  <span>Value</span>
+                  <span></span>
+                </div>
+                <div id="queryParams" class="param-rows"></div>
+              </div>
               <button class="add-param-button" onclick="addParamRow('queryParams')">
                   <span class="material-icons">add_circle</span>
                   Add Query Parameter
               </button>
             </div>
 
+
+
             <div id="headers-section" class="content-section">
-              <div id="headers" class="param-rows"></div>
+              <div class="param-table">
+                <div class="param-table-header">
+                  <span></span>
+                  <span>Key</span>
+                  <span>Value</span>
+                  <span></span>
+                </div>
+                <div id="headers" class="param-rows"></div>
+              </div>
               <button class="add-param-button" onclick="addParamRow('headers')">
                   <span class="material-icons">add_circle</span>
                 Add Header
               </button>
             </div>
+
 
             <div id="body-section" class="content-section">
                 <textarea id="body" placeholder="{\n  \"key\": \"value\",\n  \"message\": \"Hello, World!\"\n}" rows="12"></textarea>
@@ -2554,7 +2638,72 @@ export function getWebviewContent(initialState: any): string {
           setTimeout(() => ripple.remove(), 600);
         }
 
+        // Debounce utility function (defined before initializeForm)
+        let urlDebounceTimeout = null;
+        function debouncedParseURL() {
+          if (urlDebounceTimeout) clearTimeout(urlDebounceTimeout);
+          urlDebounceTimeout = setTimeout(function() {
+            parseQueryParamsFromURL();
+          }, 300);
+        }
+
+        // Parse query params from URL and populate the table
+        function parseQueryParamsFromURL() {
+          const urlInput = document.getElementById('url-input');
+          if (!urlInput) return;
+          
+          const urlValue = urlInput.value.trim();
+          console.log('parseQueryParamsFromURL called, URL:', urlValue);
+          
+          if (!urlValue || urlValue.indexOf('?') === -1) {
+            console.log('No query params in URL');
+            return;
+          }
+          
+          try {
+            // Handle URLs with or without protocol
+            let urlToParse = urlValue;
+            if (urlValue.indexOf('http://') !== 0 && urlValue.indexOf('https://') !== 0) {
+              urlToParse = 'https://' + urlValue;
+            }
+            
+            console.log('Parsing URL:', urlToParse);
+            const url = new URL(urlToParse);
+            const searchParams = url.searchParams;
+            
+            // Get params from URL
+            const urlParams = [];
+            searchParams.forEach(function(value, key) {
+              console.log('Found param:', key, '=', value);
+              urlParams.push({ key: key, value: value, enabled: true });
+            });
+            
+            console.log('Total params found:', urlParams.length);
+            
+            // Only update if URL has params
+            if (urlParams.length > 0) {
+              const queryParamsContainer = document.getElementById('queryParams');
+              if (!queryParamsContainer) return;
+              
+              queryParamsContainer.innerHTML = '';
+              
+              urlParams.forEach(function(param) {
+                addParamRow('queryParams', param);
+              });
+              
+              // Add empty row at the end
+              addParamRow('queryParams');
+              
+              saveState();
+            }
+          } catch (e) {
+            console.log('URL parse error:', e);
+          }
+        }
+
+
         function initializeForm() {
+
           document.getElementById('method-select').value = currentState.method || 'GET';
           document.getElementById('url-input').value = currentState.url || '';
           document.getElementById('body').value = currentState.body || '';
@@ -2591,7 +2740,15 @@ export function getWebviewContent(initialState: any): string {
           if (headersContainer.children.length === 0) {
             addParamRow('headers');
           }
+
+          // Setup URL input listener for auto-detecting query params
+          const urlInput = document.getElementById('url-input');
+          urlInput.addEventListener('input', debouncedParseURL);
+          urlInput.addEventListener('paste', () => {
+            setTimeout(parseQueryParamsFromURL, 100);
+          });
         }
+
 
         let saveStateTimeout = null;
         
@@ -2623,20 +2780,46 @@ export function getWebviewContent(initialState: any): string {
           }, 300); // 300ms debounce
         }
 
-        function addParamRow(containerId, initialValue = { key: '', value: '' }) {
+        function addParamRow(containerId, initialValue = { key: '', value: '', enabled: true }) {
           const container = document.getElementById(containerId);
           const row = document.createElement('div');
-          row.className = 'param-row';
+          const isEnabled = initialValue.enabled !== false; // Default to true if not specified
+          row.className = isEnabled ? 'param-row' : 'param-row disabled';
           
           row.innerHTML = \`
-            <input type="text" placeholder="Key" value="\${initialValue.key}" />
-            <input type="text" placeholder="Value" value="\${initialValue.value}" />
-            <button class="remove-param-button" onclick="removeParamRow(this)" aria-label="Delete parameter">
-              <span class="material-icons">delete</span>
-            </button>
+            <div class="param-checkbox-wrapper">
+              <input type="checkbox" class="param-checkbox" \${isEnabled ? 'checked' : ''} title="Enable/disable this parameter" />
+            </div>
+            <div class="param-input-cell">
+              <input type="text" placeholder="Key" value="\${initialValue.key}" />
+            </div>
+            <div class="param-input-cell">
+              <input type="text" placeholder="Value" value="\${initialValue.value}" />
+            </div>
+            <div class="param-action-cell">
+              <button class="remove-param-button" onclick="removeParamRow(this)" aria-label="Delete parameter">
+                <span class="material-icons">delete</span>
+              </button>
+            </div>
           \`;
 
-          const inputs = row.getElementsByTagName('input');
+
+          // Handle checkbox change
+          const checkbox = row.querySelector('.param-checkbox');
+          checkbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+              row.classList.remove('disabled');
+            } else {
+              row.classList.add('disabled');
+            }
+            if (containerId === 'queryParams') {
+              updateURLWithParams();
+            } else {
+              saveState();
+            }
+          });
+
+          const inputs = row.querySelectorAll('input[type="text"]');
           for (const input of inputs) {
             input.addEventListener('input', () => {
               if (containerId === 'queryParams') {
@@ -2678,9 +2861,12 @@ export function getWebviewContent(initialState: any): string {
           }
         }
 
+
+
         function removeParamRow(button) {
-          const row = button.parentElement;
+          const row = button.closest('.param-row');
           const container = row.parentElement;
+
           
           // Simplified removal animation - much faster
           row.style.transition = 'all 0.15s ease-out';
@@ -2905,17 +3091,20 @@ export function getWebviewContent(initialState: any): string {
           const rows = container.getElementsByClassName('param-row');
           
           for (const row of rows) {
-            const inputs = row.getElementsByTagName('input');
-            const key = inputs[0].value.trim();
-            const value = inputs[1].value.trim();
+            const checkbox = row.querySelector('.param-checkbox');
+            const textInputs = row.querySelectorAll('input[type="text"]');
+            const key = textInputs[0].value.trim();
+            const value = textInputs[1].value.trim();
+            const enabled = checkbox ? checkbox.checked : true;
             // Only include non-empty parameters to avoid cluttering storage
             if (key || value) {
-              params.push({ key, value });
+              params.push({ key, value, enabled });
             }
           }
           
           return params;
         }
+
 
         function collectParams(containerId) {
           const params = {};
@@ -2939,9 +3128,12 @@ export function getWebviewContent(initialState: any): string {
           const baseURL = urlInput.value.split('?')[0];
           const queryParams = collectParamsArray('queryParams');
           
-          if (queryParams.length > 0 && queryParams.some(param => param.key)) {
+          // Only include enabled params in URL
+          const enabledParams = queryParams.filter(param => param.enabled !== false);
+          
+          if (enabledParams.length > 0 && enabledParams.some(param => param.key)) {
             const searchParams = new URLSearchParams();
-            queryParams.forEach(param => {
+            enabledParams.forEach(param => {
               if (param.key) {
                 searchParams.append(param.key, param.value);
               }
@@ -2954,6 +3146,7 @@ export function getWebviewContent(initialState: any): string {
           
           saveState();
         }
+
 
         function showLoading() {
           const responseContainer = document.getElementById('responseContainer');

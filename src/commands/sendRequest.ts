@@ -53,7 +53,7 @@ export function registerSendRequestCommand(
         case 'saveRequest': {
           const requestData = message.request;
           const savedRequests = context.globalState.get<SavedRequest[]>('restApiTesterSavedRequests', []);
-          
+
           // Check if request with same name exists
           const existingIndex = savedRequests.findIndex(req => req.name === requestData.name);
           if (existingIndex !== -1) {
@@ -63,7 +63,7 @@ export function registerSendRequestCommand(
             // Add new request
             savedRequests.push(requestData);
           }
-          
+
           await context.globalState.update('restApiTesterSavedRequests', savedRequests);
           treeProvider.refresh();
           return;
@@ -90,13 +90,13 @@ export function registerSendRequestCommand(
           const { method, url, body, headers, queryParams } = message;
           try {
             console.log('Sending request:', { method, url, body, headers, queryParams });
-            
+
             const urlObj = new URL(url);
-            
-            // Process query parameters correctly
+
+            // Process query parameters correctly - only include enabled ones
             if (queryParams && Array.isArray(queryParams)) {
-              queryParams.forEach((param: { key: string; value: string }) => {
-                if (param.key && param.value) {
+              queryParams.forEach((param: { key: string; value: string; enabled?: boolean }) => {
+                if (param.key && param.value && param.enabled !== false) {
                   urlObj.searchParams.append(param.key, param.value);
                 }
               });
@@ -107,6 +107,7 @@ export function registerSendRequestCommand(
                 }
               });
             }
+
 
             // Process headers correctly
             const processedHeaders: Record<string, string> = {};
@@ -140,11 +141,11 @@ export function registerSendRequestCommand(
             const endTime = Date.now();
             const responseTime = endTime - startTime;
 
-            console.log('Response received:', { 
-              status: response.status, 
-              statusText: response.statusText, 
+            console.log('Response received:', {
+              status: response.status,
+              statusText: response.statusText,
               data: response.data,
-              responseTime 
+              responseTime
             });
 
             // Send response data without double-stringifying
@@ -158,10 +159,10 @@ export function registerSendRequestCommand(
             });
           } catch (error) {
             console.error('Request error:', error);
-            
+
             let errorMessage = 'An unknown error occurred.';
             let errorData = null;
-            
+
             if (axios.isAxiosError(error)) {
               if (error.response) {
                 errorMessage = `HTTP ${error.response.status} - ${error.response.statusText}`;
@@ -174,7 +175,7 @@ export function registerSendRequestCommand(
             } else if (error instanceof Error) {
               errorMessage = `Error: ${error.message}`;
             }
-            
+
             panel.webview.postMessage({
               type: 'error',
               message: errorMessage,

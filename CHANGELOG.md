@@ -2,7 +2,24 @@
 
 All notable changes to the "REST TEST" extension will be documented in this file.
 
+## [3.5.0] - 2026-01-21
+
+### Added
+- **Query Parameter Checkboxes**: Enable/disable individual params like Postman
+- **Auto-Detect Query Params**: Automatically parse params from pasted URLs
+- **Postman-Style Table Layout**: Clean table design with Key/Value columns
+
+### Improved
+- Custom styled checkboxes with blue fill and white checkmark
+- Red delete button for better visibility
+- Fixed column alignment in parameter tables
+
+### Fixed
+- Delete button functionality in new table structure
+- Checkbox alignment in table cells
+
 ## [3.3.0] - 2025-11-20
+
 
 ### Added
 - **GraphQL Support**: Full GraphQL query and mutation support
