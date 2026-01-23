@@ -3112,10 +3112,13 @@ export function getWebviewContent(initialState: any): string {
           const rows = container.getElementsByClassName('param-row');
           
           for (const row of rows) {
-            const inputs = row.getElementsByTagName('input');
-            const key = inputs[0].value.trim();
-            const value = inputs[1].value.trim();
-            if (key) {
+            const checkbox = row.querySelector('.param-checkbox');
+            const textInputs = row.querySelectorAll('input[type="text"]');
+            const key = textInputs[0].value.trim();
+            const value = textInputs[1].value.trim();
+            const enabled = checkbox ? checkbox.checked : true;
+            // Only include enabled parameters with a key
+            if (key && enabled) {
               params[key] = value;
             }
           }
