@@ -1,8 +1,11 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <!-- Circle Background -->
-    <circle cx="12" cy="12" r="11" stroke="currentColor" stroke-width="2"/>
-    <!-- R -->
-    <path d="M8 8V16M8 8H11C12.1046 8 13 8.89543 13 10C13 11.1046 12.1046 12 11 12H8M13 16L10 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <!-- T -->
-    <path d="M14 8H18M16 8V16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Rocket body -->
+  <path d="M12 2C12 2 8 6 8 12C8 16 10 20 12 22C14 20 16 16 16 12C16 6 12 2 12 2Z" 
+        stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Rocket fins -->
+  <path d="M8 14L5 17M16 14L19 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Arrow up (API upload) -->
+  <path d="M12 8L12 14M9 11L12 8L15 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Flame -->
+  <path d="M10 20C10 20 11 22 12 22C13 22 14 20 14 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
 </svg>
