@@ -2,6 +2,14 @@
 
 All notable changes to the "REST TEST" extension will be documented in this file.
 
+## [3.7.0] - 2026-01-27
+
+### Added
+- **JSON Viewer Button Alignment**: Fixed margin alignment for Expand/Collapse buttons
+- Improved vertical alignment between icons and text in buttons
+- Simplified button text ("Expand" and "Collapse" instead of "Expand All" and "Collapse All")
+- Better flexbox centering for material icons
+
 ## [3.5.0] - 2026-01-21
 
 ### Added

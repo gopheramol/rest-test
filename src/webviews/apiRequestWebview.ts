@@ -2051,7 +2051,7 @@ export function getWebviewContent(initialState: any): string {
           outline-offset: 2px;
         }
 
-        /* Collapsible JSON */
+        /* Collapsible JSON - Postman Style */
         .json-collapsible {
           font-family: var(--font-mono);
           font-size: 0.8125rem;
@@ -2067,12 +2067,11 @@ export function getWebviewContent(initialState: any): string {
         .json-container {
           font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
           font-size: 0.875rem;
-          line-height: 1.6;
+          line-height: 1.5;
           background: var(--gray-50);
           border: 1px solid var(--gray-200);
           border-radius: var(--radius);
           padding: 1rem;
-          white-space: pre-wrap;
           overflow-x: auto;
           max-height: 70vh;
           overflow-y: auto;
@@ -2098,6 +2097,151 @@ export function getWebviewContent(initialState: any): string {
         .json-null {
           color: #6b7280;
           font-style: italic;
+        }
+
+        /* Collapsible JSON Tree Styles */
+        .json-tree {
+          font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+          font-size: 0.8125rem;
+          line-height: 1.5;
+        }
+
+        .json-line {
+          display: flex;
+          align-items: flex-start;
+          padding: 2px 0;
+          white-space: nowrap;
+        }
+
+        .json-line:hover {
+          background: rgba(99, 102, 241, 0.05);
+        }
+
+        .json-toggle {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 16px;
+          height: 16px;
+          margin-right: 4px;
+          cursor: pointer;
+          font-size: 10px;
+          color: var(--gray-500);
+          border: none;
+          background: transparent;
+          border-radius: 3px;
+          flex-shrink: 0;
+          transition: all 0.15s ease;
+        }
+
+        .json-toggle:hover {
+          background: var(--gray-200);
+          color: var(--gray-700);
+        }
+
+        .json-toggle.collapsed .toggle-icon {
+          transform: rotate(-90deg);
+        }
+
+        .toggle-icon {
+          transition: transform 0.15s ease;
+        }
+
+        .json-toggle-placeholder {
+          display: inline-block;
+          width: 16px;
+          height: 16px;
+          margin-right: 4px;
+          flex-shrink: 0;
+        }
+
+        .json-bracket {
+          color: var(--gray-600);
+        }
+
+        .json-children {
+          display: block;
+          margin-left: 20px;
+          border-left: 1px dashed var(--gray-300);
+          padding-left: 8px;
+        }
+
+        .json-children.collapsed {
+          display: none;
+        }
+
+        .json-collapsed-preview {
+          color: var(--gray-400);
+          font-style: italic;
+          cursor: pointer;
+          display: none;
+        }
+
+        .json-collapsed-preview:hover {
+          color: var(--gray-600);
+        }
+
+        .json-toggle.collapsed + .json-bracket + .json-collapsed-preview {
+          display: inline;
+        }
+
+        .json-comma {
+          color: var(--gray-600);
+        }
+
+        .json-expand-controls {
+          display: flex;
+          gap: 8px;
+          margin: 0 0 12px 0;
+          padding: 0 0 8px 0;
+          border-bottom: 1px solid var(--gray-200);
+        }
+
+        .json-expand-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          padding: 8px 12px;
+          font-size: 0.8125rem;
+          font-weight: 500;
+          color: var(--gray-700);
+          background: var(--gray-50);
+          border: 1px solid var(--gray-300);
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          line-height: 1;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .json-expand-btn:hover {
+          background: var(--primary);
+          color: white;
+          border-color: var(--primary);
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .json-expand-btn .material-icons {
+          font-size: 16px;
+          line-height: 1;
+          margin: 0;
+          display: flex;
+          align-items: center;
+        }
+
+        .json-node-wrapper {
+          display: block;
+        }
+
+        .json-collapsible-line {
+          display: flex;
+          align-items: flex-start;
+        }
+
+        .json-closing-line {
+          display: flex;
+          align-items: flex-start;
         }
 
         /* Clean Professional Request Type Tabs (Postman-style) */
@@ -3178,11 +3322,25 @@ export function getWebviewContent(initialState: any): string {
             const container = document.createElement('div');
             container.className = 'json-container';
             
-            // Simple beautified JSON with syntax highlighting
-            const beautifiedJson = JSON.stringify(obj, null, 2);
-            const highlightedJson = syntaxHighlightJSON(beautifiedJson);
+            // Create expand/collapse all controls
+            const controls = document.createElement('div');
+            controls.className = 'json-expand-controls';
+            controls.innerHTML = \`
+              <button class="json-expand-btn" onclick="expandAllJson(this)">
+                <span class="material-icons">unfold_more</span><span>Expand</span>
+              </button>
+              <button class="json-expand-btn" onclick="collapseAllJson(this)">
+                <span class="material-icons">unfold_less</span><span>Collapse</span>
+              </button>
+            \`;
+            container.appendChild(controls);
             
-            container.innerHTML = highlightedJson;
+            // Create the JSON tree
+            const tree = document.createElement('div');
+            tree.className = 'json-tree';
+            tree.appendChild(renderJsonNode(obj, '', true));
+            container.appendChild(tree);
+            
             return container;
           } catch (e) {
             const container = document.createElement('div');
@@ -3190,6 +3348,150 @@ export function getWebviewContent(initialState: any): string {
             container.textContent = typeof json === 'string' ? json : JSON.stringify(json, null, 2);
             return container;
           }
+        }
+
+        function renderJsonNode(value, key, isLast) {
+          const keyHtml = key ? \`<span class="json-key">"\${escapeHtml(key)}"</span>: \` : '';
+          const comma = isLast ? '' : '<span class="json-comma">,</span>';
+          
+          // For primitive values, return a simple line
+          if (value === null) {
+            const line = document.createElement('div');
+            line.className = 'json-line';
+            line.innerHTML = \`<span class="json-toggle-placeholder"></span>\${keyHtml}<span class="json-null">null</span>\${comma}\`;
+            return line;
+          } else if (typeof value === 'boolean') {
+            const line = document.createElement('div');
+            line.className = 'json-line';
+            line.innerHTML = \`<span class="json-toggle-placeholder"></span>\${keyHtml}<span class="json-boolean">\${value}</span>\${comma}\`;
+            return line;
+          } else if (typeof value === 'number') {
+            const line = document.createElement('div');
+            line.className = 'json-line';
+            line.innerHTML = \`<span class="json-toggle-placeholder"></span>\${keyHtml}<span class="json-number">\${value}</span>\${comma}\`;
+            return line;
+          } else if (typeof value === 'string') {
+            const line = document.createElement('div');
+            line.className = 'json-line';
+            line.innerHTML = \`<span class="json-toggle-placeholder"></span>\${keyHtml}<span class="json-string">"\${escapeHtml(value)}"</span>\${comma}\`;
+            return line;
+          }
+          
+          // For objects and arrays, use a wrapper container
+          const wrapper = document.createElement('div');
+          wrapper.className = 'json-node-wrapper';
+          
+          if (Array.isArray(value)) {
+            // Opening line with toggle
+            const openLine = document.createElement('div');
+            openLine.className = 'json-line json-collapsible-line';
+            openLine.innerHTML = \`
+              <button class="json-toggle" onclick="toggleJsonNode(this)">
+                <span class="toggle-icon material-icons" style="font-size: 12px;">expand_more</span>
+              </button>
+              \${keyHtml}<span class="json-bracket">[</span>
+              <span class="json-collapsed-preview">\${value.length} items</span>
+            \`;
+            wrapper.appendChild(openLine);
+            
+            // Children container
+            if (value.length > 0) {
+              const children = document.createElement('div');
+              children.className = 'json-children';
+              value.forEach((item, index) => {
+                children.appendChild(renderJsonNode(item, '', index === value.length - 1));
+              });
+              wrapper.appendChild(children);
+            }
+            
+            // Closing bracket line
+            const closeLine = document.createElement('div');
+            closeLine.className = 'json-line json-closing-line';
+            closeLine.innerHTML = \`<span class="json-toggle-placeholder"></span><span class="json-bracket">]</span>\${comma}\`;
+            wrapper.appendChild(closeLine);
+          } else if (typeof value === 'object') {
+            const keys = Object.keys(value);
+            
+            // Opening line with toggle
+            const openLine = document.createElement('div');
+            openLine.className = 'json-line json-collapsible-line';
+            openLine.innerHTML = \`
+              <button class="json-toggle" onclick="toggleJsonNode(this)">
+                <span class="toggle-icon material-icons" style="font-size: 12px;">expand_more</span>
+              </button>
+              \${keyHtml}<span class="json-bracket">{</span>
+              <span class="json-collapsed-preview">\${keys.length} properties</span>
+            \`;
+            wrapper.appendChild(openLine);
+            
+            // Children container
+            if (keys.length > 0) {
+              const children = document.createElement('div');
+              children.className = 'json-children';
+              keys.forEach((k, index) => {
+                children.appendChild(renderJsonNode(value[k], k, index === keys.length - 1));
+              });
+              wrapper.appendChild(children);
+            }
+            
+            // Closing bracket line
+            const closeLine = document.createElement('div');
+            closeLine.className = 'json-line json-closing-line';
+            closeLine.innerHTML = \`<span class="json-toggle-placeholder"></span><span class="json-bracket">}</span>\${comma}\`;
+            wrapper.appendChild(closeLine);
+          }
+          
+          return wrapper;
+        }
+
+        function escapeHtml(str) {
+          const div = document.createElement('div');
+          div.textContent = str;
+          return div.innerHTML;
+        }
+
+        function toggleJsonNode(button) {
+          if (!button || !button.classList.contains('json-toggle')) return;
+          
+          button.classList.toggle('collapsed');
+          const wrapper = button.closest('.json-node-wrapper');
+          if (wrapper) {
+            const children = wrapper.querySelector(':scope > .json-children');
+            const closingLine = wrapper.querySelector(':scope > .json-closing-line');
+            
+            if (children) {
+              children.classList.toggle('collapsed');
+            }
+            if (closingLine) {
+              closingLine.style.display = button.classList.contains('collapsed') ? 'none' : '';
+            }
+          }
+        }
+
+        function expandAllJson(btn) {
+          const container = btn.closest('.json-container');
+          container.querySelectorAll('.json-toggle.collapsed').forEach(toggle => {
+            toggle.classList.remove('collapsed');
+          });
+          container.querySelectorAll('.json-children.collapsed').forEach(children => {
+            children.classList.remove('collapsed');
+          });
+          container.querySelectorAll('.json-closing-line').forEach(line => {
+            line.style.display = '';
+          });
+        }
+
+        function collapseAllJson(btn) {
+          const container = btn.closest('.json-container');
+          container.querySelectorAll('.json-toggle').forEach(toggle => {
+            toggle.classList.add('collapsed');
+          });
+          container.querySelectorAll('.json-children').forEach(children => {
+            children.classList.add('collapsed');
+          });
+          container.querySelectorAll('.json-closing-line').forEach(line => {
+            line.style.display = 'none';
+          });
         }
 
         function syntaxHighlightJSON(jsonString) {
