@@ -4,6 +4,10 @@ import { getWebviewContent } from '../webviews/apiRequestWebview';
 import { generateCurlCommand } from '../utils/curlGenerator';
 import { RestApiTreeProvider } from '../providers/RestApiTreeProvider';
 
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+
 interface SavedRequest {
   name: string;
   method: string;
@@ -86,6 +90,40 @@ export function registerSendRequestCommand(
           });
           return;
 
+
+        case 'openFile': {
+          const filePath = message.filePath;
+          if (fs.existsSync(filePath)) {
+            const document = await vscode.workspace.openTextDocument(filePath);
+            await vscode.window.showTextDocument(document);
+          } else {
+            vscode.window.showErrorMessage('File not found: ' + filePath);
+          }
+          return;
+        }
+
+        case 'saveResponse': {
+          const tempFilePath = message.filePath;
+          const options: vscode.SaveDialogOptions = {
+            defaultUri: vscode.Uri.file('response.json'),
+            filters: {
+              'JSON': ['json'],
+              'All Files': ['*']
+            }
+          };
+
+          const uri = await vscode.window.showSaveDialog(options);
+          if (uri && fs.existsSync(tempFilePath)) {
+            try {
+              await fs.promises.copyFile(tempFilePath, uri.fsPath);
+              vscode.window.showInformationMessage('Response saved successfully!');
+            } catch (err) {
+              vscode.window.showErrorMessage('Failed to save file: ' + err);
+            }
+          }
+          return;
+        }
+
         case 'sendRequest': {
           const { method, url, body, headers, queryParams } = message;
           try {
@@ -137,6 +175,8 @@ export function registerSendRequestCommand(
               data: body ? (typeof body === 'string' ? JSON.parse(body) : body) : undefined,
               headers: processedHeaders,
               timeout: 30000, // 30 second timeout
+              maxContentLength: Infinity,
+              maxBodyLength: Infinity
             });
             const endTime = Date.now();
             const responseTime = endTime - startTime;
@@ -144,19 +184,60 @@ export function registerSendRequestCommand(
             console.log('Response received:', {
               status: response.status,
               statusText: response.statusText,
-              data: response.data,
               responseTime
             });
 
-            // Send response data without double-stringifying
-            panel.webview.postMessage({
-              type: 'response',
-              status: response.status,
-              statusText: response.statusText,
-              data: response.data, // Send raw data, let frontend handle formatting
-              responseTime: responseTime,
-              headers: response.headers || {}
-            });
+            // Check response size
+            const jsonString = JSON.stringify(response.data);
+            const sizeInBytes = Buffer.byteLength(jsonString);
+            const sizeInMB = sizeInBytes / (1024 * 1024);
+
+            if (sizeInMB > 2) {
+              // Handle large response
+              const tempDir = os.tmpdir();
+              const tempFilePath = path.join(tempDir, `response-${Date.now()}.json`);
+
+              await fs.promises.writeFile(tempFilePath, jsonString);
+
+              // Create truncated preview
+              let previewData;
+              if (Array.isArray(response.data)) {
+                previewData = response.data.slice(0, 50); // First 50 items
+              } else if (typeof response.data === 'object' && response.data !== null) {
+                previewData = {} as Record<string, any>;
+                let count = 0;
+                for (const key in response.data) {
+                  if (count > 50) break;
+                  previewData[key] = (response.data as Record<string, any>)[key];
+                  count++;
+                }
+              } else {
+                previewData = String(response.data).substring(0, 10000);
+              }
+
+              panel.webview.postMessage({
+                type: 'response',
+                status: response.status,
+                statusText: response.statusText,
+                data: previewData,
+                responseTime: responseTime,
+                headers: response.headers || {},
+                isLargeResponse: true,
+                sizeInMB: sizeInMB.toFixed(2),
+                tempFilePath: tempFilePath
+              });
+            } else {
+              // Send response data normally
+              panel.webview.postMessage({
+                type: 'response',
+                status: response.status,
+                statusText: response.statusText,
+                data: response.data,
+                responseTime: responseTime,
+                headers: response.headers || {}
+              });
+            }
+
           } catch (error) {
             console.error('Request error:', error);
 

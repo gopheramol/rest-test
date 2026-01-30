@@ -3516,8 +3516,8 @@ export function getWebviewContent(initialState: any): string {
             });
         }
 
-        function showResponse(data, status, statusText, responseTime, headers = {}) {
-          console.log('showResponse called with:', { data, status, statusText, responseTime, headers });
+        function showResponse(data, status, statusText, responseTime, headers = {}, isLargeResponse = false, sizeInMB = 0, tempFilePath = '') {
+          console.log('showResponse called with:', { data, status, statusText, responseTime, headers, isLargeResponse, sizeInMB, tempFilePath });
           
           const responseContainer = document.getElementById('responseContainer');
           const responseBox = document.getElementById('responseBox');
@@ -3531,51 +3531,107 @@ export function getWebviewContent(initialState: any): string {
           responseBox.className = 'response-container response-success';
           responseStatus.innerHTML = \`✅ <strong>\${status}</strong> - \${statusText}\`;
           
-          // Update response time
-          const timeSpan = responseTimeEl.querySelector('span:last-child');
-          if (timeSpan) {
-            timeSpan.textContent = formatResponseTime(responseTime);
-          }
-          
-          // Calculate and display response size
-          const responseSize = data ? JSON.stringify(data).length : 0;
-          const sizeSpan = responseSizeEl.querySelector('span:last-child');
-          if (sizeSpan) {
-            sizeSpan.textContent = formatResponseSize(responseSize);
-          }
-          
-          // Display response data in body tab
-          displayResponseData(data, 'pretty');
-          
-          // Display headers
-          displayResponseHeaders(headers);
-          
-          // Update timing breakdown
-          updateTimingBreakdown(responseTime);
-          
-          // Show buttons
-          copyButton.style.display = 'block';
-          copyAsCurlButton.style.display = 'block';
-          copyButton.className = 'copy-button';
-          copyAsCurlButton.className = 'copy-as-curl';
-          copyButton.innerHTML = '<span class="material-icons">content_copy</span>';
-          copyAsCurlButton.innerHTML = '<span class="material-icons">terminal</span>';
-        }
+          // Clear any existing large response warning
+          const existingWarning = document.getElementById('large-response-warning');
+          if (existingWarning) existingWarning.remove();
 
-        function showError(message, data, headers = {}) {
-          console.log('showError called with:', { message, data, headers });
-          
-          const responseContainer = document.getElementById('responseContainer');
-          const responseBox = document.getElementById('responseBox');
-          const responseStatus = document.getElementById('responseStatus');
-          const responseTimeEl = document.getElementById('responseTime');
-          const responseSizeEl = document.getElementById('responseSize');
-          const copyButton = document.getElementById('copyButton');
-          const copyAsCurlButton = document.getElementById('copyAsCurlButton');
+          if (isLargeResponse) {
+             const warningHtml = \`
+                <div id="large-response-warning" style="background: var(--warning); color: white; padding: var(--space-3); margin-bottom: var(--space-3); border-radius: var(--radius); display: flex; flex-direction: column; gap: var(--space-2); box-shadow: var(--shadow-sm);">
+                    <div style="font-weight: 600; display: flex; align-items: center; gap: var(--space-2);">
+                        <span class="material-icons">warning</span>
+                        Large Response (\${sizeInMB} MB)
+                    </div>
+                    <div style="font-size: 0.9em;">
+                        The response is too large to fully display in the preview. A truncated version is shown below.
+                    </div>
+                    <div style="display: flex; gap: var(--space-2); margin-top: var(--space-1);">
+                        <button id="openFileBtn" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 6px 12px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.85em; transition: background 0.2s;">
+                           <span class="material-icons" style="font-size: 16px;">open_in_new</span> Open in Editor
+                        </button>
+                        <button id="saveFileBtn" style="background: white; color: var(--warning-dark); border: none; padding: 6px 12px; border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; gap: 4px; font-size: 0.85em; font-weight: 600; transition: transform 0.1s;">
+                           <span class="material-icons" style="font-size: 16px;">save</span> Save to File...
+                        </button>
+                    </div>
+                </div>
+             \`;
+             responseStatus.insertAdjacentHTML('afterend', warningHtml);
 
-          responseContainer.style.display = 'block';
-          responseBox.className = 'response-container response-error';
-          responseStatus.innerHTML = \`❌ <strong>Error</strong>\`;
+    // Add listeners
+    setTimeout(() => {
+      const openBtn = document.getElementById('openFileBtn');
+      const saveBtn = document.getElementById('saveFileBtn');
+
+      if (openBtn) {
+        openBtn.addEventListener('click', () => {
+          vscode.postMessage({ type: 'openFile', filePath: tempFilePath });
+        });
+        openBtn.addEventListener('mouseenter', () => openBtn.style.background = 'rgba(255,255,255,0.3)');
+        openBtn.addEventListener('mouseleave', () => openBtn.style.background = 'rgba(255,255,255,0.2)');
+      }
+
+      if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+          vscode.postMessage({ type: 'saveResponse', filePath: tempFilePath });
+        });
+        saveBtn.addEventListener('mousedown', () => saveBtn.style.transform = 'scale(0.95)');
+        saveBtn.addEventListener('mouseup', () => saveBtn.style.transform = 'scale(1)');
+      }
+    }, 0);
+  }
+
+  // Update response time
+  const timeSpan = responseTimeEl.querySelector('span:last-child');
+  if (timeSpan) {
+    timeSpan.textContent = formatResponseTime(responseTime);
+  }
+
+  // Calculate and display response size
+  // If large response, use the size passed from backend, otherwise calc string length
+  let sizeDisplay = 0;
+  if (isLargeResponse) {
+    sizeDisplay = sizeInMB * 1024 * 1024; // approx bytes
+  } else {
+    sizeDisplay = data ? JSON.stringify(data).length : 0;
+  }
+
+  const sizeSpan = responseSizeEl.querySelector('span:last-child');
+  if (sizeSpan) {
+    sizeSpan.textContent = formatResponseSize(sizeDisplay);
+  }
+
+  // Display response data in body tab
+  displayResponseData(data, 'pretty');
+
+  // Display headers
+  displayResponseHeaders(headers);
+
+  // Update timing breakdown
+  updateTimingBreakdown(responseTime);
+
+  // Show buttons
+  copyButton.style.display = 'block';
+  copyAsCurlButton.style.display = 'block';
+  copyButton.className = 'copy-button';
+  copyAsCurlButton.className = 'copy-as-curl';
+  copyButton.innerHTML = '<span class="material-icons">content_copy</span>';
+  copyAsCurlButton.innerHTML = '<span class="material-icons">terminal</span>';
+}
+
+function showError(message, data, headers = {}) {
+  console.log('showError called with:', { message, data, headers });
+
+  const responseContainer = document.getElementById('responseContainer');
+  const responseBox = document.getElementById('responseBox');
+  const responseStatus = document.getElementById('responseStatus');
+  const responseTimeEl = document.getElementById('responseTime');
+  const responseSizeEl = document.getElementById('responseSize');
+  const copyButton = document.getElementById('copyButton');
+  const copyAsCurlButton = document.getElementById('copyAsCurlButton');
+
+  responseContainer.style.display = 'block';
+  responseBox.className = 'response-container response-error';
+  responseStatus.innerHTML = \`❌ <strong>Error</strong>\`;
           
           // Clear timing displays
           const timeSpan = responseTimeEl.querySelector('span:last-child');
@@ -4228,7 +4284,7 @@ export function getWebviewContent(initialState: any): string {
               document.getElementById('send-btn').disabled = false;
               document.getElementById('graphql-send-btn').innerHTML = '<span class="material-icons">send</span>Send';
               document.getElementById('graphql-send-btn').disabled = false;
-              showResponse(message.data, message.status, message.statusText, message.responseTime, message.headers || {});
+              showResponse(message.data, message.status, message.statusText, message.responseTime, message.headers || {}, message.isLargeResponse, message.sizeInMB, message.tempFilePath);
               break;
               
             case 'error':
