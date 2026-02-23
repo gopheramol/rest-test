@@ -1,8 +1,8 @@
 {
   "name": "rest-test",
   "displayName": "REST TEST",
-  "description": "Professional REST & GraphQL API testing extension for VS Code with clean Postman-inspired UI, fast performance, and comprehensive request management",
-  "version": "3.7.1",
+  "description": "Professional REST & GraphQL API testing extension for VS Code with sleek dark-themed UI, fast performance, and comprehensive request management",
+  "version": "4.0.0",
   "publisher": "GopherAmol",
   "license": "MIT",
   "repository": {

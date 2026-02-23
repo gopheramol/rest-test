@@ -5,33 +5,26 @@ A Visual Studio Code extension for testing REST APIs directly from your editor w
 
 ## Features
 
-- **🚀 High-Performance Interface**: Lightning-fast, optimized UI with smooth animations
+- **🌙 Sleek Dark Theme**: Modern dark UI with teal accent colors for comfortable API testing
+- **🚀 High-Performance Interface**: Lightning-fast, optimized UI with minimal animations
 - **⚡ Instant Loading**: Sub-second page load times with optimized font loading
-- **🎯 Precise Hover Effects**: No overlapping elements with proper z-index layering
-- **📱 Responsive Design**: Smooth performance across all devices
+- **📱 Responsive Design**: Clean, unified request bar layout
 
 - **Support for Multiple HTTP Methods**: 
-  - GET
-  - POST
-  - PUT
-  - DELETE
-  - PATCH
-  - HEAD
-  - OPTIONS
+  - GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
 
 - **Request Configuration**:
-  - URL input with validation and smooth focus effects
+  - Unified request bar with method selector and URL input
   - Dynamic query parameters builder with instant add/remove
-  - Custom headers management with optimized animations
+  - Custom headers management
   - JSON body editor with syntax highlighting
   
 - **Advanced Features**:
   - Save and manage your API requests
-  - Method-specific color coding and icons
+  - Method-specific color coding
   - Beautiful JSON response formatting with syntax highlighting
   - Comprehensive error handling with clear messages
   - Request state persistence across sessions  
-  - Real-time request status updates with loading animations
   - Copy response data and cURL commands
   - Response time and size metrics
 
@@ -50,118 +43,67 @@ A Visual Studio Code extension for testing REST APIs directly from your editor w
 
 ### Making Requests
 
-1. **Select HTTP Method**:
-   - Choose from the dropdown: GET, POST, PUT, DELETE, or PATCH
-
-2. **Enter URL**:
-   - Input the full URL of your API endpoint
-   - The extension validates the URL format
-
-3. **Add Query Parameters** (Optional):
-   - Click "Add Query Parameter"
-   - Enter key-value pairs
-   - Parameters are automatically appended to the URL
-
-4. **Add Headers** (Optional):
-   - Click "Add Header"
-   - Enter key-value pairs for custom headers
-   - Common headers like Content-Type are supported
-
-5. **Add Request Body** (Optional):
-   - For POST, PUT, and PATCH requests
-   - Enter valid JSON in the body textarea
-   - JSON validation is performed before sending
-
-6. **Send Request**:
-   - Click the "Send Request" button
-   - View the response in the panel below
+1. **Select HTTP Method**: Choose from the dropdown (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)
+2. **Enter URL**: Input the full URL of your API endpoint
+3. **Add Query Parameters** (Optional): Click "Add Query Parameter" and enter key-value pairs
+4. **Add Headers** (Optional): Click "Add Header" and enter key-value pairs
+5. **Add Request Body** (Optional): Enter valid JSON in the body textarea (POST, PUT, PATCH)
+6. **Send Request**: Click "Send" and view the response below
 
 ### Saving Requests
 
-1. **Save Current Request**:
-   - Click the "Save" button
-   - Enter a name for your request
-   - The request will appear in the "Saved Requests" section
-
-2. **Using Saved Requests**:
-   - Access saved requests from the sidebar
-   - Each request shows with a method-specific icon
-   - Click to load and execute the saved request
+- Click **Save** to save the current request with a custom name
+- Access saved requests from the sidebar with method-specific icons
 
 ### Response Handling
 
-- **Success Responses**:
-  - Status code and status text displayed
-  - Response body formatted as pretty JSON
-  - Syntax highlighting for different JSON types
-  - Easy to read color-coded display
-
-- **Error Responses**:
-  - Clear error messages
-  - HTTP error status codes
-  - Network error handling
-  - JSON parsing error detection
+- Status code and formatted JSON response with syntax highlighting
+- Clear error messages for HTTP and network errors
+- Copy response data and cURL commands
 
 ## State Management
 
-The extension automatically saves:
-- Last used HTTP method
-- Previous URL
-- Query parameters
-- Headers
-- Request body
-- Saved requests with custom names
-
-This state persists across VS Code sessions for convenience.
+The extension automatically saves your last used method, URL, parameters, headers, body, and saved requests across VS Code sessions.
 
 ## Requirements
 
-- Visual Studio Code version 1.95.0 or higher
+- Visual Studio Code version 1.60.0 or higher
 - Internet connection for making API requests
 
-## Extension Settings
-
 ## Release Notes
+
+### [4.0.0] - 2026-02-23
+
+#### 🌙 Complete Dark Theme UI Overhaul
+
+### Added
+- **🎨 Dark theme**: New sleek dark UI with teal (#00d4aa) accent colors
+- **📐 Unified request bar**: Method selector and URL input merged into a single dark, rounded bar
+- **🏷️ Pill-style tabs**: Clean uppercase tab labels (Params, Headers, Body)
+
+### Changed
+- **Color palette**: Migrated from Postman-inspired orange (#FF6C37) to modern dark theme with teal accents
+- **CSS architecture**: Removed ~70 unused CSS variables for a leaner, faster stylesheet
+- **Animations**: Stripped heavy animations (typewriter, morph, slideUpFade) — kept only essential fade-in and spin
+- **Tab switching**: Instant tab switching replacing animated transitions
+- **Tab labels**: Simplified from icon+text to clean text-only labels
+- **Typography**: Streamlined font stack
+- **Transitions**: Performance-optimized with specific property targeting instead of `all`
+
+### Removed
+- Removed unused glassmorphism effects, gradient cards, and complex shadow hierarchy
+- Removed decorative animations that impacted performance
+- Removed redundant spacing and radius variables
 
 ### [3.2.0] - 2025-06-11
 
 #### 🚀 Major Performance Optimization Release
 
-### Added
-- **⚡ Lightning-fast loading**: 80% faster page load times (2-3s → ~500ms)
-- **🎯 Precise hover effects**: No more overlapping components with proper z-index hierarchy
-- **📈 Performance metrics**: Response time and size tracking
-- **🎨 Enhanced animations**: Smooth, optimized transitions throughout the UI
-- **💾 Better state management**: Improved request persistence
-- **📋 Copy functionality**: Copy response data and cURL commands
-
-### Performance Improvements
-- **Font Loading**: Preloaded fonts with display=swap for zero blocking
-- **CSS Optimization**: 50% reduction in CSS complexity with hardware acceleration
-- **Animation Performance**: 60% smoother hover effects with proper containment
-- **Layout Stability**: 100% elimination of layout shifts during interactions
-- **Hardware Acceleration**: GPU-accelerated transforms for smooth animations
-
-### Changed
-- **Hover Effects**: Reduced transform intensity to prevent overlapping
-- **Z-Index Hierarchy**: Proper stacking context for all interactive elements
-- **Transition Timing**: Optimized animation durations for better UX
-- **CSS Architecture**: Simplified selectors and added containment hints
-
-### Fixed
-- ✅ Parameter rows overlapping on hover
-- ✅ Method select dropdown appearing behind URL input
-- ✅ Action buttons causing layout shifts
-- ✅ Remove buttons overlapping input fields
-- ✅ Heavy box-shadows causing performance issues
-- ✅ Complex transform combinations causing jank
-
-### Technical Details
-- Added `contain: layout` for optimal performance
-- Implemented `will-change: transform` hints for GPU acceleration
-- Optimized z-index values: Method Select (10), Inputs (5), Buttons (3), Rows (2)
-- Reduced transform complexity: Eliminated scale + rotate combinations
-- Simplified shadow effects: Reduced from var(--shadow-2xl) to optimized values
+- Lightning-fast loading (80% faster page load times)
+- Precise hover effects with proper z-index hierarchy
+- Performance metrics, response time and size tracking
+- Copy response data and cURL commands
+- 50% reduction in CSS complexity with hardware acceleration
 
 ### [2.8.4] - 2024-03-14
 
