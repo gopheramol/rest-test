@@ -11,9 +11,7 @@ export function activate(context: vscode.ExtensionContext) {
     treeDataProvider: treeProvider
   });
   
-  context.subscriptions.push(
-    vscode.window.registerTreeDataProvider('restApiTesterView', treeProvider)
-  );
+  context.subscriptions.push(restApiContainer);
 
   // Register commands
   context.subscriptions.push(registerSendRequestCommand(context, treeProvider));
