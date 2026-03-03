@@ -813,6 +813,10 @@ export function getWebviewContent(initialState: any): string {
           border-left: none;
         }
 
+        .response-container.response-warning {
+          border-left: none;
+        }
+
         /* Dark Response Header */
         .response-header {
           padding: var(--space-4) var(--space-5);
@@ -2967,15 +2971,30 @@ export function getWebviewContent(initialState: any): string {
           const copyAsCurlButton = document.getElementById('copyAsCurlButton');
 
           responseContainer.style.display = 'block';
-          responseBox.className = 'response-container response-success';
-          responseStatus.innerHTML = \`✅ <strong>\${status}</strong> - \${statusText}\`;
           
-          // Clear any existing large response warning
-          const existingWarning = document.getElementById('large-response-warning');
-          if (existingWarning) existingWarning.remove();
+          let statusIcon = '✅';
+          let statusClass = 'response-success';
+          
+          if (status >= 500) {
+            statusIcon = '❌';
+            statusClass = 'response-error';
+          } else if (status >= 400) {
+            statusIcon = '⚠️';
+            statusClass = 'response-warning';
+          } else if (status >= 300) {
+            statusIcon = '↩️';
+            statusClass = 'response-warning';
+          }
+          
+          responseBox.className = 'response-container ' + statusClass;
+          responseStatus.innerHTML = statusIcon + ' <strong>' + status + '</strong> - ' + statusText;
 
-          if (isLargeResponse) {
-             const warningHtml = \`
+  // Clear any existing large response warning
+  const existingWarning = document.getElementById('large-response-warning');
+  if (existingWarning) existingWarning.remove();
+
+  if (isLargeResponse) {
+    const warningHtml = \`
                 <div id="large-response-warning" style="background: var(--warning); color: white; padding: var(--space-3); margin-bottom: var(--space-3); border-radius: var(--radius); display: flex; flex-direction: column; gap: var(--space-2); box-shadow: var(--shadow-sm);">
                     <div style="font-weight: 600; display: flex; align-items: center; gap: var(--space-2);">
                         <span class="material-icons">warning</span>
@@ -3057,8 +3076,8 @@ export function getWebviewContent(initialState: any): string {
   copyAsCurlButton.innerHTML = '<span class="material-icons">terminal</span>';
 }
 
-function showError(message, data, headers = {}) {
-  console.log('showError called with:', { message, data, headers });
+function showError(message, data, headers = {}, status = null, statusText = null) {
+  console.log('showError called with:', { message, data, headers, status, statusText });
 
   const responseContainer = document.getElementById('responseContainer');
   const responseBox = document.getElementById('responseBox');
@@ -3070,7 +3089,24 @@ function showError(message, data, headers = {}) {
 
   responseContainer.style.display = 'block';
   responseBox.className = 'response-container response-error';
-  responseStatus.innerHTML = \`❌ <strong>Error</strong>\`;
+  
+  if (status) {
+    responseStatus.innerHTML = '❌ <strong>' + status + '</strong> - ' + (statusText || 'Error');
+  } else {
+    // Try to parse status code from message like "HTTP 400 - Bad Request"
+    if (message && message.indexOf('HTTP ') === 0) {
+      var dashIdx = message.indexOf(' - ');
+      if (dashIdx > 0) {
+        var codeStr = message.substring(5, dashIdx);
+        var textStr = message.substring(dashIdx + 3);
+        responseStatus.innerHTML = '❌ <strong>' + codeStr + '</strong> - ' + textStr;
+      } else {
+        responseStatus.innerHTML = '❌ <strong>' + message + '</strong>';
+      }
+    } else {
+      responseStatus.innerHTML = '❌ <strong>' + (message || 'Error') + '</strong>';
+    }
+  }
           
           // Clear timing displays
           const timeSpan = responseTimeEl.querySelector('span:last-child');
@@ -3732,7 +3768,7 @@ function showError(message, data, headers = {}) {
               document.getElementById('send-btn').disabled = false;
               document.getElementById('graphql-send-btn').innerHTML = '<span class="material-icons">send</span>Send';
               document.getElementById('graphql-send-btn').disabled = false;
-              showError(message.message, message.data, message.headers || {});
+              showError(message.message, message.data, message.headers || {}, message.status || null, message.statusText || null);
               break;
               
             case 'copySuccess':

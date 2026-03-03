@@ -176,7 +176,8 @@ export function registerSendRequestCommand(
               headers: processedHeaders,
               timeout: 30000, // 30 second timeout
               maxContentLength: Infinity,
-              maxBodyLength: Infinity
+              maxBodyLength: Infinity,
+              validateStatus: () => true
             });
             const endTime = Date.now();
             const responseTime = endTime - startTime;
@@ -261,7 +262,9 @@ export function registerSendRequestCommand(
               type: 'error',
               message: errorMessage,
               data: errorData,
-              headers: (axios.isAxiosError(error) && error.response) ? error.response.headers || {} : {}
+              headers: (axios.isAxiosError(error) && error.response) ? error.response.headers || {} : {},
+              status: (axios.isAxiosError(error) && error.response) ? error.response.status : null,
+              statusText: (axios.isAxiosError(error) && error.response) ? error.response.statusText : null
             });
           }
           break;
