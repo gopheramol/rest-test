@@ -393,6 +393,16 @@ export function getWebviewContent(initialState: any): string {
           background: #c9d1d9;
         }
 
+        .send-button.is-cancelling {
+          background: #f85149;
+          color: #ffffff;
+        }
+
+        .send-button.is-cancelling:hover {
+          background: #da3633;
+          box-shadow: 0 2px 12px rgba(248, 81, 73, 0.25);
+        }
+
         .send-button .material-icons {
           display: none;
         }
@@ -2019,20 +2029,16 @@ export function getWebviewContent(initialState: any): string {
                         <span class="timing-value" id="dnsTime">--</span>
                       </div>
                       <div class="timing-item">
-                        <span class="timing-label">TCP Handshake</span>
+                        <span class="timing-label">TCP Connection</span>
                         <span class="timing-value" id="tcpTime">--</span>
                       </div>
                       <div class="timing-item">
-                        <span class="timing-label">SSL Handshake</span>
+                        <span class="timing-label">TLS Handshake</span>
                         <span class="timing-value" id="sslTime">--</span>
                       </div>
                       <div class="timing-item">
-                        <span class="timing-label">Request Sent</span>
-                        <span class="timing-value" id="requestTime">--</span>
-                      </div>
-                      <div class="timing-item">
-                        <span class="timing-label">Response Received</span>
-                        <span class="timing-value" id="responseTimeDetail">--</span>
+                        <span class="timing-label">Server Processing &amp; Download</span>
+                        <span class="timing-value" id="transferTime">--</span>
                       </div>
                       <div class="timing-item">
                         <span class="timing-label">Total Time</span>
@@ -2604,27 +2610,33 @@ export function getWebviewContent(initialState: any): string {
           
           headersTableBody.innerHTML = headerEntries.map(([key, value]) => \`
             <tr>
-              <td>\${key}</td>
-              <td>\${value}</td>
+              <td>\${escapeHtml(String(key))}</td>
+              <td>\${escapeHtml(String(value))}</td>
             </tr>
           \`).join('');
         }
 
-        function updateTimingBreakdown(responseTime) {
-          // Simulate timing breakdown (in a real implementation, these would come from the actual request)
-          const total = responseTime;
-          const dns = Math.round(total * 0.05);
-          const tcp = Math.round(total * 0.15);
-          const ssl = Math.round(total * 0.20);
-          const request = Math.round(total * 0.10);
-          const response = total - dns - tcp - ssl - request;
-          
-          document.getElementById('dnsTime').textContent = formatResponseTime(dns);
-          document.getElementById('tcpTime').textContent = formatResponseTime(tcp);
-          document.getElementById('sslTime').textContent = formatResponseTime(ssl);
-          document.getElementById('requestTime').textContent = formatResponseTime(request);
-          document.getElementById('responseTimeDetail').textContent = formatResponseTime(response);
-          document.getElementById('totalTime').textContent = formatResponseTime(total);
+        function updateTimingBreakdown(timing, responseTime) {
+          // Real, measured connection-phase durations from the extension host.
+          // Phases that didn't occur (e.g. TLS on http, DNS for an IP) come back
+          // as null and are shown as "n/a".
+          const set = (id, ms) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (ms === null || ms === undefined || isNaN(ms)) {
+              el.textContent = 'n/a';
+            } else {
+              el.textContent = formatResponseTime(Math.max(0, Math.round(ms)));
+            }
+          };
+
+          timing = timing || {};
+          set('dnsTime', timing.dns);
+          set('tcpTime', timing.tcp);
+          set('sslTime', timing.tls);
+          set('transferTime', timing.transfer);
+          // Fall back to the round-trip time if the host didn't send a total.
+          set('totalTime', timing.total != null ? timing.total : responseTime);
         }
 
         function setupResponseSearch() {
@@ -2632,43 +2644,53 @@ export function getWebviewContent(initialState: any): string {
           searchInput.addEventListener('input', (e) => {
             const query = e.target.value;
             const responseBody = document.getElementById('responseBody');
-            const originalText = responseBody.dataset.originalText || responseBody.textContent;
-            
-            if (!responseBody.dataset.originalText) {
-              responseBody.dataset.originalText = responseBody.textContent;
-            }
-            
-            if (query && query.length > 0) {
-              // Simple highlighting without complex regex
-              const lowerOriginal = originalText.toLowerCase();
-              const lowerQuery = query.toLowerCase();
-              
-              if (lowerOriginal.indexOf(lowerQuery) !== -1) {
-                let highlighted = originalText;
-                let startIndex = 0;
-                let result = '';
-                
-                while (true) {
-                  const index = lowerOriginal.indexOf(lowerQuery, startIndex);
-                  if (index === -1) {
-                    result += originalText.substring(startIndex);
-                    break;
-                  }
-                  
-                  result += originalText.substring(startIndex, index);
-                  result += '<mark style="background: yellow; color: black;">';
-                  result += originalText.substring(index, index + query.length);
-                  result += '</mark>';
-                  startIndex = index + query.length;
+            const rawData = responseBody.dataset.rawData;
+
+            // Empty query: restore the original formatted (collapsible) view.
+            if (!query) {
+              if (rawData) {
+                try {
+                  displayResponseData(JSON.parse(rawData), 'pretty');
+                } catch (e) {
+                  responseBody.textContent = rawData;
                 }
-                
-                responseBody.innerHTML = result;
-              } else {
-                responseBody.textContent = originalText;
+              }
+              return;
+            }
+
+            // Build a plain-text representation of the response to search within.
+            let plainText;
+            if (rawData) {
+              try {
+                plainText = JSON.stringify(JSON.parse(rawData), null, 2);
+              } catch (e) {
+                plainText = rawData;
               }
             } else {
-              responseBody.textContent = originalText;
+              plainText = responseBody.textContent;
             }
+
+            const lowerText = plainText.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+            let startIndex = 0;
+            let result = '';
+
+            // Escape every text segment before inserting into innerHTML so JSON
+            // containing <, >, & (or markup) cannot break the layout or inject.
+            while (true) {
+              const index = lowerText.indexOf(lowerQuery, startIndex);
+              if (index === -1) {
+                result += escapeHtml(plainText.substring(startIndex));
+                break;
+              }
+              result += escapeHtml(plainText.substring(startIndex, index));
+              result += '<mark style="background: #ffd54f; color: #000;">'
+                + escapeHtml(plainText.substring(index, index + query.length))
+                + '</mark>';
+              startIndex = index + query.length;
+            }
+
+            responseBody.innerHTML = result;
           });
         }
 
@@ -2778,10 +2800,15 @@ export function getWebviewContent(initialState: any): string {
             \`;
             container.appendChild(controls);
             
+            // For large payloads, render nested nodes collapsed & unbuilt so the
+            // initial DOM stays small; they build on first expand. Small payloads
+            // render fully expanded as before.
+            jsonLazyMode = countJsonNodes(obj, 200) >= 200;
+
             // Create the JSON tree
             const tree = document.createElement('div');
             tree.className = 'json-tree';
-            tree.appendChild(renderJsonNode(obj, '', true));
+            tree.appendChild(renderJsonNode(obj, '', true, 0));
             container.appendChild(tree);
             
             return container;
@@ -2793,10 +2820,34 @@ export function getWebviewContent(initialState: any): string {
           }
         }
 
-        function renderJsonNode(value, key, isLast) {
+        // When true, nested object/array nodes start collapsed and their children
+        // are built only on first expand (set per-render in formatJSONWithCollapsible).
+        let jsonLazyMode = false;
+
+        // Cheap bounded node count to decide whether to render lazily. Stops
+        // counting once it reaches the cap so huge payloads don't get fully walked.
+        function countJsonNodes(obj, cap) {
+          let n = 0;
+          const stack = [obj];
+          while (stack.length && n < cap) {
+            const cur = stack.pop();
+            if (Array.isArray(cur)) {
+              n += cur.length;
+              for (const x of cur) { if (x && typeof x === 'object') stack.push(x); }
+            } else if (cur && typeof cur === 'object') {
+              const ks = Object.keys(cur);
+              n += ks.length;
+              for (const k of ks) { if (cur[k] && typeof cur[k] === 'object') stack.push(cur[k]); }
+            }
+          }
+          return n;
+        }
+
+        function renderJsonNode(value, key, isLast, depth) {
+          depth = depth || 0;
           const keyHtml = key ? \`<span class="json-key">"\${escapeHtml(key)}"</span>: \` : '';
           const comma = isLast ? '' : '<span class="json-comma">,</span>';
-          
+
           // For primitive values, return a simple line
           if (value === null) {
             const line = document.createElement('div');
@@ -2819,89 +2870,107 @@ export function getWebviewContent(initialState: any): string {
             line.innerHTML = \`<span class="json-toggle-placeholder"></span>\${keyHtml}<span class="json-string">"\${escapeHtml(value)}"</span>\${comma}\`;
             return line;
           }
-          
+
           // For objects and arrays, use a wrapper container
+          const isArray = Array.isArray(value);
+          const count = isArray ? value.length : Object.keys(value).length;
+          const openBracket = isArray ? '[' : '{';
+          const closeBracket = isArray ? ']' : '}';
+          const previewText = isArray ? \`\${count} items\` : \`\${count} properties\`;
+
           const wrapper = document.createElement('div');
           wrapper.className = 'json-node-wrapper';
-          
-          if (Array.isArray(value)) {
-            // Opening line with toggle
-            const openLine = document.createElement('div');
-            openLine.className = 'json-line json-collapsible-line';
-            openLine.innerHTML = \`
-              <button class="json-toggle" onclick="toggleJsonNode(this)">
-                <span class="toggle-icon material-icons" style="font-size: 12px;">expand_more</span>
-              </button>
-              \${keyHtml}<span class="json-bracket">[</span>
-              <span class="json-collapsed-preview">\${value.length} items</span>
-            \`;
-            wrapper.appendChild(openLine);
-            
-            // Children container
-            if (value.length > 0) {
-              const children = document.createElement('div');
-              children.className = 'json-children';
-              value.forEach((item, index) => {
-                children.appendChild(renderJsonNode(item, '', index === value.length - 1));
-              });
-              wrapper.appendChild(children);
-            }
-            
-            // Closing bracket line
-            const closeLine = document.createElement('div');
-            closeLine.className = 'json-line json-closing-line';
-            closeLine.innerHTML = \`<span class="json-toggle-placeholder"></span><span class="json-bracket">]</span>\${comma}\`;
-            wrapper.appendChild(closeLine);
-          } else if (typeof value === 'object') {
-            const keys = Object.keys(value);
-            
-            // Opening line with toggle
-            const openLine = document.createElement('div');
-            openLine.className = 'json-line json-collapsible-line';
-            openLine.innerHTML = \`
-              <button class="json-toggle" onclick="toggleJsonNode(this)">
-                <span class="toggle-icon material-icons" style="font-size: 12px;">expand_more</span>
-              </button>
-              \${keyHtml}<span class="json-bracket">{</span>
-              <span class="json-collapsed-preview">\${keys.length} properties</span>
-            \`;
-            wrapper.appendChild(openLine);
-            
-            // Children container
-            if (keys.length > 0) {
-              const children = document.createElement('div');
-              children.className = 'json-children';
-              keys.forEach((k, index) => {
-                children.appendChild(renderJsonNode(value[k], k, index === keys.length - 1));
-              });
-              wrapper.appendChild(children);
-            }
-            
-            // Closing bracket line
-            const closeLine = document.createElement('div');
-            closeLine.className = 'json-line json-closing-line';
-            closeLine.innerHTML = \`<span class="json-toggle-placeholder"></span><span class="json-bracket">}</span>\${comma}\`;
-            wrapper.appendChild(closeLine);
+
+          // Opening line with toggle
+          const openLine = document.createElement('div');
+          openLine.className = 'json-line json-collapsible-line';
+          openLine.innerHTML = \`
+            <button class="json-toggle" onclick="toggleJsonNode(this)">
+              <span class="toggle-icon material-icons" style="font-size: 12px;">expand_more</span>
+            </button>
+            \${keyHtml}<span class="json-bracket">\${openBracket}</span>
+            <span class="json-collapsed-preview">\${previewText}</span>
+          \`;
+          wrapper.appendChild(openLine);
+
+          // Children container (always present so toggle has a target)
+          const children = document.createElement('div');
+          children.className = 'json-children';
+          wrapper.appendChild(children);
+
+          // Closing bracket line
+          const closeLine = document.createElement('div');
+          closeLine.className = 'json-line json-closing-line';
+          closeLine.innerHTML = \`<span class="json-toggle-placeholder"></span><span class="json-bracket">\${closeBracket}</span>\${comma}\`;
+          wrapper.appendChild(closeLine);
+
+          // Stash data for lazy (re)builds.
+          wrapper.__jsonValue = value;
+          wrapper.__childDepth = depth + 1;
+          wrapper.__built = false;
+
+          // In lazy mode, collapse nested non-empty nodes and defer building their
+          // children until the user expands them. Otherwise build immediately.
+          if (count > 0 && jsonLazyMode && depth >= 1) {
+            const toggle = openLine.querySelector('.json-toggle');
+            toggle.classList.add('collapsed');
+            children.classList.add('collapsed');
+            closeLine.style.display = 'none';
+          } else {
+            buildJsonChildren(wrapper);
           }
-          
+
           return wrapper;
         }
 
+        // Build (or rebuild) a node's children from its stashed value. No-op if
+        // already built or if the value has no children.
+        function buildJsonChildren(wrapper) {
+          if (!wrapper || wrapper.__built) return;
+          wrapper.__built = true;
+          const value = wrapper.__jsonValue;
+          const depth = wrapper.__childDepth || 1;
+          const children = wrapper.querySelector(':scope > .json-children');
+          if (!children || !value || typeof value !== 'object') return;
+
+          if (Array.isArray(value)) {
+            value.forEach((item, index) => {
+              children.appendChild(renderJsonNode(item, '', index === value.length - 1, depth));
+            });
+          } else {
+            const keys = Object.keys(value);
+            keys.forEach((k, index) => {
+              children.appendChild(renderJsonNode(value[k], k, index === keys.length - 1, depth));
+            });
+          }
+        }
+
         function escapeHtml(str) {
-          const div = document.createElement('div');
-          div.textContent = str;
-          return div.innerHTML;
+          // Plain string replace — avoids creating a DOM node per call, which
+          // is significant when rendering thousands of JSON nodes.
+          return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
         }
 
         function toggleJsonNode(button) {
           if (!button || !button.classList.contains('json-toggle')) return;
-          
-          button.classList.toggle('collapsed');
+
           const wrapper = button.closest('.json-node-wrapper');
+          // Expanding a not-yet-built node: build its children lazily first.
+          const expanding = button.classList.contains('collapsed');
+          if (expanding && wrapper && !wrapper.__built) {
+            buildJsonChildren(wrapper);
+          }
+
+          button.classList.toggle('collapsed');
           if (wrapper) {
             const children = wrapper.querySelector(':scope > .json-children');
             const closingLine = wrapper.querySelector(':scope > .json-closing-line');
-            
+
             if (children) {
               children.classList.toggle('collapsed');
             }
@@ -2913,6 +2982,16 @@ export function getWebviewContent(initialState: any): string {
 
         function expandAllJson(btn) {
           const container = btn.closest('.json-container');
+          // Build any lazily-deferred nodes first. Building a node can add more
+          // unbuilt descendants, so repeat until none remain.
+          let guard = 0;
+          while (guard++ < 10000) {
+            let builtAny = false;
+            container.querySelectorAll('.json-node-wrapper').forEach(w => {
+              if (!w.__built) { buildJsonChildren(w); builtAny = true; }
+            });
+            if (!builtAny) break;
+          }
           container.querySelectorAll('.json-toggle.collapsed').forEach(toggle => {
             toggle.classList.remove('collapsed');
           });
@@ -2959,7 +3038,7 @@ export function getWebviewContent(initialState: any): string {
             });
         }
 
-        function showResponse(data, status, statusText, responseTime, headers = {}, isLargeResponse = false, sizeInMB = 0, tempFilePath = '') {
+        function showResponse(data, status, statusText, responseTime, headers = {}, isLargeResponse = false, sizeInMB = 0, tempFilePath = '', timing = null) {
           console.log('showResponse called with:', { data, status, statusText, responseTime, headers, isLargeResponse, sizeInMB, tempFilePath });
           
           const responseContainer = document.getElementById('responseContainer');
@@ -3065,7 +3144,7 @@ export function getWebviewContent(initialState: any): string {
   displayResponseHeaders(headers);
 
   // Update timing breakdown
-  updateTimingBreakdown(responseTime);
+  updateTimingBreakdown(timing, responseTime);
 
   // Show buttons
   copyButton.style.display = 'block';
@@ -3136,10 +3215,24 @@ function showError(message, data, headers = {}, status = null, statusText = null
         function copyResponse() {
           const responseBody = document.getElementById('responseBody');
           const button = document.getElementById('copyButton');
-          
+
+          // Copy the actual response payload, not the rendered tree text
+          // (which would include toggle labels and "N items" previews).
+          const rawData = responseBody.dataset.rawData;
+          let textToCopy;
+          if (rawData) {
+            try {
+              textToCopy = JSON.stringify(JSON.parse(rawData), null, 2);
+            } catch (e) {
+              textToCopy = rawData;
+            }
+          } else {
+            textToCopy = responseBody.textContent;
+          }
+
           vscode.postMessage({
             type: 'copyToClipboard',
-            text: responseBody.textContent
+            text: textToCopy
           });
           
           // Enhanced copy feedback
@@ -3205,13 +3298,46 @@ function showError(message, data, headers = {}, status = null, statusText = null
           }, 3000);
         }
 
+        // Whether a request is currently in flight. While true, the Send buttons
+        // act as Cancel buttons.
+        let requestInFlight = false;
+
+        // Toggle both Send buttons between "Send" and "Cancel" states.
+        function setSendingState(inFlight) {
+          requestInFlight = inFlight;
+          ['send-btn', 'graphql-send-btn'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (!btn) return;
+            btn.disabled = false;
+            if (inFlight) {
+              btn.classList.add('is-cancelling');
+              btn.innerHTML = '<span class="material-icons">close</span>Cancel';
+            } else {
+              btn.classList.remove('is-cancelling');
+              btn.innerHTML = '<span class="material-icons">send</span>Send';
+            }
+          });
+        }
+
+        // Cancel the in-flight request (used when a Send button is clicked mid-flight).
+        function cancelRequest() {
+          vscode.postMessage({ type: 'cancelRequest' });
+        }
+
         function sendRequest() {
+          // While a request is running, the button acts as Cancel.
+          if (requestInFlight) {
+            cancelRequest();
+            return;
+          }
+
           const method = document.getElementById('method-select').value;
           const url = document.getElementById('url-input').value;
           const body = document.getElementById('body').value;
           const headers = collectParams('headers');
-          const queryParams = collectParams('queryParams');
-          const sendButton = document.getElementById('send-btn');
+          // Array form preserves the enabled flag and duplicate keys (e.g.
+          // ?id=1&id=2); the object form would collapse those to a single value.
+          const queryParams = collectParamsArray('queryParams');
 
           if (!url) {
             showError('Please enter a URL');
@@ -3234,28 +3360,18 @@ function showError(message, data, headers = {}, status = null, statusText = null
             }
           }
 
-          // Enhanced button feedback
-          const originalHtml = sendButton.innerHTML;
-          sendButton.innerHTML = '<span class="material-icons">sync</span>Sending...';
-          sendButton.disabled = true;
-
+          setSendingState(true);
           showLoading();
           saveState();
 
-          vscode.postMessage({ 
+          vscode.postMessage({
             type: 'sendRequest',
-            method, 
-            url, 
-            headers, 
+            method,
+            url,
+            headers,
             body,
-            queryParams 
+            queryParams
           });
-          
-          // Reset button after a delay (will be reset properly when response comes)
-          setTimeout(() => {
-            sendButton.innerHTML = originalHtml;
-            sendButton.disabled = false;
-          }, 30000); // 30 second timeout
         }
 
         function openSaveDialog() {
@@ -3636,11 +3752,16 @@ function showError(message, data, headers = {}, status = null, statusText = null
         }
 
         function sendGraphQLRequest() {
+          // While a request is running, the button acts as Cancel.
+          if (requestInFlight) {
+            cancelRequest();
+            return;
+          }
+
           const url = document.getElementById('graphql-url-input').value;
           const query = document.getElementById('graphql-query').value;
           const variables = document.getElementById('graphql-variables').value;
           const headers = collectParams('graphql-headers');
-          const sendButton = document.getElementById('graphql-send-btn');
 
           if (!url) {
             showError('Please enter a GraphQL URL');
@@ -3652,31 +3773,32 @@ function showError(message, data, headers = {}, status = null, statusText = null
             return;
           }
 
-          // Enhanced button feedback
-          const originalHtml = sendButton.innerHTML;
-          sendButton.innerHTML = '<span class="material-icons">sync</span>Sending...';
-          sendButton.disabled = true;
+          // Validate variables JSON before sending (avoids a silent throw here).
+          let parsedVariables;
+          if (variables) {
+            try {
+              parsedVariables = JSON.parse(variables);
+            } catch {
+              showError('Invalid JSON in GraphQL variables');
+              return;
+            }
+          }
 
+          setSendingState(true);
           showLoading();
           saveState();
 
-          vscode.postMessage({ 
+          vscode.postMessage({
             type: 'sendRequest',
             requestType: 'graphql',
             method: 'POST', // GraphQL is always POST
-            url, 
-            headers, 
+            url,
+            headers,
             body: JSON.stringify({
               query,
-              variables: variables ? JSON.parse(variables) : undefined
+              variables: parsedVariables
             })
           });
-          
-          // Reset button after a delay
-          setTimeout(() => {
-            sendButton.innerHTML = originalHtml;
-            sendButton.disabled = false;
-          }, 30000);
         }
 
         // This function is now defined above, removing duplicate
@@ -3755,22 +3877,22 @@ function showError(message, data, headers = {}, status = null, statusText = null
           switch (message.type) {
             case 'response':
               console.log('Handling response:', message);
-              document.getElementById('send-btn').innerHTML = '<span class="material-icons">send</span>Send';
-              document.getElementById('send-btn').disabled = false;
-              document.getElementById('graphql-send-btn').innerHTML = '<span class="material-icons">send</span>Send';
-              document.getElementById('graphql-send-btn').disabled = false;
-              showResponse(message.data, message.status, message.statusText, message.responseTime, message.headers || {}, message.isLargeResponse, message.sizeInMB, message.tempFilePath);
+              setSendingState(false);
+              showResponse(message.data, message.status, message.statusText, message.responseTime, message.headers || {}, message.isLargeResponse, message.sizeInMB, message.tempFilePath, message.timing || null);
               break;
-              
+
             case 'error':
               console.log('Handling error:', message);
-              document.getElementById('send-btn').innerHTML = '<span class="material-icons">send</span>Send';
-              document.getElementById('send-btn').disabled = false;
-              document.getElementById('graphql-send-btn').innerHTML = '<span class="material-icons">send</span>Send';
-              document.getElementById('graphql-send-btn').disabled = false;
+              setSendingState(false);
               showError(message.message, message.data, message.headers || {}, message.status || null, message.statusText || null);
               break;
-              
+
+            case 'cancelled':
+              console.log('Request cancelled');
+              setSendingState(false);
+              showError('Request cancelled');
+              break;
+
             case 'copySuccess':
               console.log('Copy success:', message);
               showCopyFeedback(message.message || 'Copied to clipboard!');

@@ -7,6 +7,47 @@ import { RestApiTreeProvider } from '../providers/RestApiTreeProvider';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import * as http from 'http';
+import * as https from 'https';
+
+interface PhaseTimings {
+  start: number;
+  dnsEnd?: number;
+  connectEnd?: number;
+  tlsEnd?: number;
+}
+
+/**
+ * Wraps an http(s) Agent so we can record real connection-phase timestamps
+ * (DNS lookup, TCP connect, TLS handshake) from the underlying socket.
+ */
+function instrumentAgent(agent: http.Agent, timings: PhaseTimings): void {
+  const orig = (agent as any).createConnection;
+  if (typeof orig !== 'function') {
+    return;
+  }
+  (agent as any).createConnection = function (options: any, cb: any) {
+    const socket = orig.call(this, options, cb);
+    socket.once('lookup', () => { timings.dnsEnd = Date.now(); });
+    socket.once('connect', () => { timings.connectEnd = Date.now(); });
+    socket.once('secureConnect', () => { timings.tlsEnd = Date.now(); });
+    return socket;
+  };
+}
+
+/**
+ * Turns raw phase timestamps into real, non-overlapping durations. Phases that
+ * didn't occur (e.g. TLS on a plain-http request, or DNS for an IP literal)
+ * are reported as null so the UI can show them as not-applicable.
+ */
+function computeTimings(t: PhaseTimings, endTime: number): Record<string, number | null> {
+  const dns = t.dnsEnd !== undefined ? t.dnsEnd - t.start : null;
+  const tcp = t.connectEnd !== undefined && t.dnsEnd !== undefined ? t.connectEnd - t.dnsEnd : null;
+  const tls = t.tlsEnd !== undefined && t.connectEnd !== undefined ? t.tlsEnd - t.connectEnd : null;
+  const connectionReady = t.tlsEnd ?? t.connectEnd ?? t.dnsEnd ?? t.start;
+  const transfer = endTime - connectionReady; // request send + server processing + download
+  return { dns, tcp, tls, transfer, total: endTime - t.start };
+}
 
 interface SavedRequest {
   name: string;
@@ -48,8 +89,17 @@ export function registerSendRequestCommand(
 
     panel.webview.html = getWebviewContent(storedState);
 
+    // Tracks the in-flight request for this panel so it can be cancelled.
+    let activeController: AbortController | null = null;
+
     panel.webview.onDidReceiveMessage(async (message) => {
       switch (message.type) {
+        case 'cancelRequest':
+          if (activeController) {
+            activeController.abort();
+          }
+          return;
+
         case 'saveState':
           await context.globalState.update('restApiTesterState', message.state);
           return;
@@ -131,16 +181,22 @@ export function registerSendRequestCommand(
 
             const urlObj = new URL(url);
 
+            // The URL string may already carry params that the webview also
+            // mirrors into the params table, so skip exact key+value duplicates
+            // to avoid emitting e.g. ?resource=vat&resource=vat.
+            const hasParam = (key: string, value: string) =>
+              urlObj.searchParams.getAll(key).includes(value);
+
             // Process query parameters correctly - only include enabled ones
             if (queryParams && Array.isArray(queryParams)) {
               queryParams.forEach((param: { key: string; value: string; enabled?: boolean }) => {
-                if (param.key && param.value && param.enabled !== false) {
+                if (param.key && param.value && param.enabled !== false && !hasParam(param.key, param.value)) {
                   urlObj.searchParams.append(param.key, param.value);
                 }
               });
             } else if (queryParams && typeof queryParams === 'object') {
               Object.entries(queryParams).forEach(([key, value]) => {
-                if (key && value) {
+                if (key && value && !hasParam(key, value as string)) {
                   urlObj.searchParams.append(key, value as string);
                 }
               });
@@ -168,7 +224,18 @@ export function registerSendRequestCommand(
               processedHeaders['Content-Type'] = 'application/json';
             }
 
-            const startTime = Date.now();
+            // Per-request agents instrumented for real phase timing. keepAlive
+            // is off so every request makes a fresh connection (accurate DNS/TCP/TLS).
+            const isHttps = urlObj.protocol === 'https:';
+            const timings: PhaseTimings = { start: Date.now() };
+            const httpAgent = new http.Agent({ keepAlive: false });
+            const httpsAgent = new https.Agent({ keepAlive: false });
+            instrumentAgent(isHttps ? httpsAgent : httpAgent, timings);
+
+            // Allow this request to be cancelled from the webview.
+            activeController = new AbortController();
+
+            const startTime = timings.start;
             const response = await axios({
               method: method.toLowerCase(),
               url: urlObj.toString(),
@@ -177,10 +244,15 @@ export function registerSendRequestCommand(
               timeout: 30000, // 30 second timeout
               maxContentLength: Infinity,
               maxBodyLength: Infinity,
-              validateStatus: () => true
+              validateStatus: () => true,
+              signal: activeController.signal,
+              httpAgent,
+              httpsAgent
             });
             const endTime = Date.now();
             const responseTime = endTime - startTime;
+            const timing = computeTimings(timings, endTime);
+            activeController = null;
 
             console.log('Response received:', {
               status: response.status,
@@ -225,7 +297,8 @@ export function registerSendRequestCommand(
                 headers: response.headers || {},
                 isLargeResponse: true,
                 sizeInMB: sizeInMB.toFixed(2),
-                tempFilePath: tempFilePath
+                tempFilePath: tempFilePath,
+                timing: timing
               });
             } else {
               // Send response data normally
@@ -235,12 +308,23 @@ export function registerSendRequestCommand(
                 statusText: response.statusText,
                 data: response.data,
                 responseTime: responseTime,
-                headers: response.headers || {}
+                headers: response.headers || {},
+                timing: timing
               });
             }
 
           } catch (error) {
             console.error('Request error:', error);
+
+            const wasCancelled = activeController?.signal.aborted ||
+              (axios.isCancel && axios.isCancel(error));
+            activeController = null;
+
+            // A user-initiated cancel isn't an error — tell the webview to reset.
+            if (wasCancelled) {
+              panel.webview.postMessage({ type: 'cancelled' });
+              break;
+            }
 
             let errorMessage = 'An unknown error occurred.';
             let errorData = null;
