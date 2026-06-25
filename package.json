@@ -2,7 +2,7 @@
   "name": "rest-test",
   "displayName": "REST TEST",
   "description": "Professional REST & GraphQL API testing extension for VS Code with sleek dark-themed UI, fast performance, and comprehensive request management",
-  "version": "4.0.6",
+  "version": "4.1.3",
   "publisher": "GopherAmol",
   "license": "MIT",
   "repository": {
@@ -10,7 +10,7 @@
     "url": "https://github.com/gopheramol/rest-test"
   },
   "engines": {
-    "vscode": "^1.60.0"
+    "vscode": "^1.67.0"
   },
   "categories": [
     "Other"
@@ -43,12 +43,49 @@
         {
           "command": "restApiTest.sendRequest",
           "when": "view == restApiTesterView",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "restApiTest.newCollection",
+          "when": "view == restApiTesterView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "restApiTest.importCollection",
+          "when": "view == restApiTesterView",
+          "group": "navigation@3"
         },
         {
           "command": "restApiTest.refreshView",
           "when": "view == restApiTesterView",
-          "group": "navigation"
+          "group": "navigation@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "restApiTest.renameCollection",
+          "when": "view == restApiTesterView && viewItem == collection",
+          "group": "1_modify@1"
+        },
+        {
+          "command": "restApiTest.exportCollection",
+          "when": "view == restApiTesterView && viewItem == collection",
+          "group": "1_modify@2"
+        },
+        {
+          "command": "restApiTest.deleteCollection",
+          "when": "view == restApiTesterView && viewItem == collection",
+          "group": "2_danger@1"
+        },
+        {
+          "command": "restApiTest.moveRequest",
+          "when": "view == restApiTesterView && viewItem == saved-request",
+          "group": "1_modify@1"
+        },
+        {
+          "command": "restApiTest.deleteRequest",
+          "when": "view == restApiTesterView && viewItem == saved-request",
+          "group": "2_danger@1"
         }
       ]
     },
@@ -62,6 +99,41 @@
         "command": "restApiTest.refreshView",
         "title": "Refresh",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "restApiTest.newCollection",
+        "title": "New Collection",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "restApiTest.importCollection",
+        "title": "Import Postman Collection",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "restApiTest.exportCollection",
+        "title": "Export as Postman Collection",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "restApiTest.renameCollection",
+        "title": "Rename Collection",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "restApiTest.deleteCollection",
+        "title": "Delete Collection",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "restApiTest.moveRequest",
+        "title": "Move to Collection…",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "restApiTest.deleteRequest",
+        "title": "Delete Request",
+        "icon": "$(trash)"
       }
     ]
   },
@@ -76,7 +148,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.9",
     "@types/node": "20.x",
-    "@types/vscode": "^1.60.0",
+    "@types/vscode": "^1.67.0",
     "@typescript-eslint/eslint-plugin": "^8.10.0",
     "@typescript-eslint/parser": "^8.7.0",
     "@vscode/test-cli": "^0.0.10",

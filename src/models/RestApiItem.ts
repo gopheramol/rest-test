@@ -1,6 +1,14 @@
 import * as vscode from 'vscode';
+import { Collection, SavedRequest } from '../services/CollectionService';
 
 export class RestApiItem extends vscode.TreeItem {
+  /** Set on collection nodes and on saved-request nodes (their parent). */
+  public collectionId?: string;
+  /** Set on saved-request nodes. */
+  public requestId?: string;
+  /** The full saved request, set on saved-request nodes. */
+  public request?: SavedRequest;
+
   constructor(
     public readonly label: string,
     public readonly description: string,
@@ -12,7 +20,7 @@ export class RestApiItem extends vscode.TreeItem {
     super(label, collapsibleState);
     this.tooltip = description;
     this.description = description;
-    
+
     if (command) {
       this.command = command;
     }
@@ -24,9 +32,6 @@ export class RestApiItem extends vscode.TreeItem {
     if (contextValue) {
       this.contextValue = contextValue;
     }
-
-    // Enhanced visual properties for smoother UI
-    this.resourceUri = undefined; // Can be used for custom styling
   }
 
   /**
@@ -48,25 +53,28 @@ export class RestApiItem extends vscode.TreeItem {
   }
 
   /**
-   * Create a saved requests parent item
+   * Create a collection (folder) node.
    */
-  static createSavedRequestsParent(count: number): RestApiItem {
-    return new RestApiItem(
-      'Saved Requests',
-      `${count} saved request${count === 1 ? '' : 's'}`,
+  static createCollectionItem(collection: Collection): RestApiItem {
+    const count = collection.requests.length;
+    const item = new RestApiItem(
+      collection.name,
+      `${count} request${count === 1 ? '' : 's'}`,
       vscode.TreeItemCollapsibleState.Expanded,
       undefined,
-      new vscode.ThemeIcon('bookmark', new vscode.ThemeColor('charts.blue')),
-      'saved-requests'
+      new vscode.ThemeIcon('folder', new vscode.ThemeColor('charts.blue')),
+      'collection'
     );
+    item.collectionId = collection.id;
+    return item;
   }
 
   /**
-   * Create a saved request item with method-specific styling
+   * Create a saved request item with method-specific styling.
    */
-  static createSavedRequestItem(request: any): RestApiItem {
+  static createSavedRequestItem(request: SavedRequest, collectionId: string): RestApiItem {
     let iconColor: vscode.ThemeColor;
-    switch (request.method.toUpperCase()) {
+    switch ((request.method || '').toUpperCase()) {
       case 'GET':
         iconColor = new vscode.ThemeColor('charts.green');
         break;
@@ -86,17 +94,21 @@ export class RestApiItem extends vscode.TreeItem {
         iconColor = new vscode.ThemeColor('charts.gray');
     }
 
-    return new RestApiItem(
+    const item = new RestApiItem(
       request.name,
       `${request.method} ${request.url}`,
       vscode.TreeItemCollapsibleState.None,
       {
         command: 'restApiTest.sendRequest',
         title: 'Send Request',
-        arguments: [request]
+        arguments: [request, collectionId]
       },
       new vscode.ThemeIcon('symbol-method', iconColor),
       'saved-request'
     );
+    item.collectionId = collectionId;
+    item.requestId = request.id;
+    item.request = request;
+    return item;
   }
-} 
+}

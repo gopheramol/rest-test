@@ -1,23 +1,24 @@
 import * as vscode from 'vscode';
 import { RestApiItem } from '../models/RestApiItem';
+import { CollectionService } from '../services/CollectionService';
 
-interface SavedRequest {
-  name: string;
-  method: string;
-  url: string;
-  body: string;
-  headers: { key: string; value: string }[];
-  queryParams: { key: string; value: string }[];
+const REQUEST_MIME = 'application/vnd.resttest.request';
+
+interface DragPayload {
+  requestId: string;
+  collectionId: string;
 }
 
-export class RestApiTreeProvider implements vscode.TreeDataProvider<RestApiItem> {
-  private _onDidChangeTreeData: vscode.EventEmitter<RestApiItem | undefined | null | void> = new vscode.EventEmitter<RestApiItem | undefined | null | void>();
-  readonly onDidChangeTreeData: vscode.Event<RestApiItem | undefined | null | void> = this._onDidChangeTreeData.event;
-  
-  private isRefreshing: boolean = false;
-  private lastRefreshTime: number = 0;
-  
-  constructor(private context: vscode.ExtensionContext) {}
+export class RestApiTreeProvider
+  implements vscode.TreeDataProvider<RestApiItem>, vscode.TreeDragAndDropController<RestApiItem> {
+  private _onDidChangeTreeData = new vscode.EventEmitter<RestApiItem | undefined | null | void>();
+  readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+
+  // Drag & drop wiring.
+  readonly dragMimeTypes = [REQUEST_MIME];
+  readonly dropMimeTypes = [REQUEST_MIME];
+
+  constructor(private context: vscode.ExtensionContext, private collections: CollectionService) {}
 
   getTreeItem(element: RestApiItem): vscode.TreeItem {
     return element;
@@ -25,227 +26,77 @@ export class RestApiTreeProvider implements vscode.TreeDataProvider<RestApiItem>
 
   async getChildren(element?: RestApiItem): Promise<RestApiItem[]> {
     if (!element) {
-      // Root level items with enhanced animation support
-      const items: RestApiItem[] = [];
-
-      // Add section for new request with enhanced styling
-      items.push(RestApiItem.createNewRequestItem());
-
-      // Add saved requests section with smooth loading
-      const savedRequests = this.context.globalState.get<SavedRequest[]>('restApiTesterSavedRequests', []);
-      if (savedRequests.length > 0) {
-        items.push(RestApiItem.createSavedRequestsParent(savedRequests.length));
+      const items: RestApiItem[] = [RestApiItem.createNewRequestItem()];
+      for (const collection of this.collections.getCollections()) {
+        items.push(RestApiItem.createCollectionItem(collection));
       }
-
-      // Simulate smooth loading for better UX (only on first load or after significant changes)
-      const now = Date.now();
-      if (now - this.lastRefreshTime > 1000) {
-        await this.simulateProgressiveLoading();
-        this.lastRefreshTime = now;
-      }
-
-      return Promise.resolve(items);
-    } else if (element.contextValue === 'saved-requests') {
-      // Children of "Saved Requests" node with staggered loading animation
-      const savedRequests = this.context.globalState.get<SavedRequest[]>('restApiTesterSavedRequests', []);
-      
-      const requestItems = savedRequests.map(request => 
-        RestApiItem.createSavedRequestItem(request)
-      );
-
-      // Add subtle delay for smooth expansion animation
-      if (requestItems.length > 3) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      return Promise.resolve(requestItems);
+      return items;
     }
 
-    // For other elements that don't have children
-    return Promise.resolve([]);
+    if (element.contextValue === 'collection' && element.collectionId) {
+      const collection = this.collections.getCollection(element.collectionId);
+      if (!collection) {
+        return [];
+      }
+      return collection.requests.map(req =>
+        RestApiItem.createSavedRequestItem(req, collection.id)
+      );
+    }
+
+    return [];
   }
 
-  /**
-   * Refresh the tree view with smooth animation
-   */
   refresh(): void {
-    if (this.isRefreshing) {
-      return; // Prevent multiple simultaneous refreshes
-    }
-
-    this.isRefreshing = true;
-    
-    // Show progress indicator for longer operations
-    vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: "Refreshing API requests...",
-        cancellable: false
-      },
-      async (progress) => {
-        progress.report({ increment: 0 });
-        
-        // Simulate smooth refresh with progress
-        for (let i = 0; i <= 100; i += 25) {
-          progress.report({ 
-            increment: 25, 
-            message: i < 100 ? `Loading... ${i}%` : "Complete!" 
-          });
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-        
-        this._onDidChangeTreeData.fire();
-        this.isRefreshing = false;
-      }
-    );
+    this._onDidChangeTreeData.fire();
   }
 
-  /**
-   * Refresh specific item with animation
-   */
-  refreshItem(item?: RestApiItem): void {
-    this._onDidChangeTreeData.fire(item);
-  }
+  // ----- Drag & drop -----
 
-  /**
-   * Add a new saved request with smooth animation feedback
-   */
-  async addSavedRequest(request: SavedRequest): Promise<void> {
-    const savedRequests = this.context.globalState.get<SavedRequest[]>('restApiTesterSavedRequests', []);
-    
-    // Add with smooth feedback
-    await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Notification,
-        title: `Saving "${request.name}"...`,
-        cancellable: false
-      },
-      async (progress) => {
-        progress.report({ increment: 0 });
-        
-        // Simulate save process for smooth UX
-        progress.report({ increment: 50, message: "Validating request..." });
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        savedRequests.push(request);
-        await this.context.globalState.update('restApiTesterSavedRequests', savedRequests);
-        
-        progress.report({ increment: 100, message: "Saved successfully!" });
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        this.refresh();
-        
-        // Show success message with icon
-        vscode.window.showInformationMessage(
-          `✅ Request "${request.name}" saved successfully!`,
-          'View Requests'
-        ).then(selection => {
-          if (selection === 'View Requests') {
-            vscode.commands.executeCommand('restApiTesterView.focus');
-          }
-        });
-      }
-    );
-  }
-
-  /**
-   * Remove a saved request with smooth animation
-   */
-  async removeSavedRequest(requestName: string): Promise<void> {
-    const result = await vscode.window.showWarningMessage(
-      `Are you sure you want to delete "${requestName}"?`,
-      { modal: true },
-      'Delete',
-      'Cancel'
-    );
-
-    if (result === 'Delete') {
-      await vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: `Deleting "${requestName}"...`,
-          cancellable: false
-        },
-        async (progress) => {
-          progress.report({ increment: 0 });
-          
-          const savedRequests = this.context.globalState.get<SavedRequest[]>('restApiTesterSavedRequests', []);
-          const updatedRequests = savedRequests.filter(req => req.name !== requestName);
-          
-          progress.report({ increment: 50, message: "Removing..." });
-          await new Promise(resolve => setTimeout(resolve, 150));
-          
-          await this.context.globalState.update('restApiTesterSavedRequests', updatedRequests);
-          
-          progress.report({ increment: 100, message: "Deleted!" });
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          this.refresh();
-          
-          vscode.window.showInformationMessage(`🗑️ "${requestName}" deleted successfully!`);
-        }
-      );
+  handleDrag(source: RestApiItem[], dataTransfer: vscode.DataTransfer): void {
+    const payload: DragPayload[] = source
+      .filter(item => item.contextValue === 'saved-request' && item.requestId && item.collectionId)
+      .map(item => ({ requestId: item.requestId!, collectionId: item.collectionId! }));
+    if (payload.length) {
+      dataTransfer.set(REQUEST_MIME, new vscode.DataTransferItem(payload));
     }
   }
 
-  /**
-   * Simulate progressive loading for smooth UX
-   */
-  private async simulateProgressiveLoading(): Promise<void> {
-    // Only add delay for better perceived performance on slower operations
-    if (this.context.globalState.get<SavedRequest[]>('restApiTesterSavedRequests', []).length > 5) {
-      await new Promise(resolve => setTimeout(resolve, 50));
+  async handleDrop(target: RestApiItem | undefined, dataTransfer: vscode.DataTransfer): Promise<void> {
+    const transferItem = dataTransfer.get(REQUEST_MIME);
+    if (!transferItem) {
+      return;
     }
-  }
-
-  /**
-   * Get all saved requests
-   */
-  getSavedRequests(): SavedRequest[] {
-    return this.context.globalState.get<SavedRequest[]>('restApiTesterSavedRequests', []);
-  }
-
-  /**
-   * Clear all saved requests with confirmation
-   */
-  async clearAllRequests(): Promise<void> {
-    const requests = this.getSavedRequests();
-    if (requests.length === 0) {
-      vscode.window.showInformationMessage('No saved requests to clear.');
+    const payload = transferItem.value as DragPayload[];
+    if (!Array.isArray(payload) || !payload.length) {
       return;
     }
 
-    const result = await vscode.window.showWarningMessage(
-      `Are you sure you want to delete all ${requests.length} saved requests?`,
-      { modal: true },
-      'Delete All',
-      'Cancel'
-    );
+    // Resolve the destination collection and (optional) insertion index.
+    let toCollectionId: string | undefined;
+    let targetIndex: number | undefined;
 
-    if (result === 'Delete All') {
-      await vscode.window.withProgress(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: `Clearing all requests...`,
-          cancellable: false
-        },
-        async (progress) => {
-          progress.report({ increment: 0 });
-          
-          for (let i = 0; i <= 100; i += 20) {
-            progress.report({ 
-              increment: 20, 
-              message: i < 100 ? `Clearing... ${i}%` : "Complete!" 
-            });
-            await new Promise(resolve => setTimeout(resolve, 100));
-          }
-          
-          await this.context.globalState.update('restApiTesterSavedRequests', []);
-          this.refresh();
-          
-          vscode.window.showInformationMessage(`🧹 All requests cleared successfully!`);
-        }
-      );
+    if (!target) {
+      return; // Dropped on empty space — ignore.
     }
+
+    if (target.contextValue === 'collection') {
+      toCollectionId = target.collectionId;
+    } else if (target.contextValue === 'saved-request' && target.collectionId) {
+      toCollectionId = target.collectionId;
+      const collection = this.collections.getCollection(toCollectionId);
+      if (collection) {
+        const idx = collection.requests.findIndex(r => r.id === target.requestId);
+        targetIndex = idx === -1 ? undefined : idx;
+      }
+    }
+
+    if (!toCollectionId) {
+      return;
+    }
+
+    for (const entry of payload) {
+      await this.collections.moveRequest(entry.requestId, entry.collectionId, toCollectionId, targetIndex);
+    }
+    this.refresh();
   }
-} 
+}

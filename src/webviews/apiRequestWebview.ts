@@ -1,7 +1,16 @@
 /**
  * Generates HTML content for the API request webview
  */
-export function getWebviewContent(initialState: any, iconCssUri?: string): string {
+export function getWebviewContent(
+  initialState: any,
+  iconCssUri?: string,
+  collections: { id: string; name: string }[] = [],
+  currentCollectionId?: string
+): string {
+  // Escape user-supplied collection names before interpolating into HTML.
+  const escapeForAttr = (s: string) =>
+    String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
   // Prefer the locally-bundled icon font (always available, even with a strict
   // CSP or no network); fall back to the CDN if no webview URI was provided.
   const iconStylesheet = iconCssUri
@@ -18,26 +27,55 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
       ${iconStylesheet}
       <style>
         :root {
-          /* Color Palette */
-          --primary: #00d4aa;
-          --primary-dark: #00b894;
-          --primary-light: #55efc4;
-          --success: #00d4aa;
+          /* ===== Adaptive base — driven by VS Code theme tokens, hex fallback ===== */
+          --bg: var(--vscode-editor-background, #0d1117);
+          --surface: var(--vscode-editorWidget-background, #161b22);
+          --surface-2: var(--vscode-list-hoverBackground, #21262d);
+          --fg: var(--vscode-editor-foreground, #e6edf3);
+          --fg-soft: var(--vscode-foreground, #c9d1d9);
+          --fg-muted: var(--vscode-descriptionForeground, #8b949e);
+          --fg-subtle: var(--vscode-disabledForeground, #6e7681);
+          --border: var(--vscode-widget-border, var(--vscode-panel-border, #30363d));
+          --border-strong: var(--vscode-contrastBorder, #484f58);
+          --input-bg: var(--vscode-input-background, #0d1117);
+          --input-fg: var(--vscode-input-foreground, #e6edf3);
+
+          /* ===== Branded accent + vibrant layer ===== */
+          --primary: #6366f1;
+          --primary-dark: #4f46e5;
+          --primary-light: #818cf8;
+          --accent: #6366f1;
+          --accent-soft: rgba(99, 102, 241, 0.16);
+          --accent-glow: rgba(99, 102, 241, 0.34);
+          --success: #3fb950;
           --error: #f85149;
           --error-dark: #da3633;
           --warning: #d29922;
           --info: #58a6ff;
-          
-          /* Gray Scale */
-          --gray-300: #30363d;
-          --gray-400: #484f58;
-          --gray-500: #6e7681;
-          --gray-600: #8b949e;
-          
-          /* Surface Colors */
-          --surface: #161b22;
-          --border: #30363d;
-          
+
+          /* Gray Scale (kept for any legacy refs) */
+          --gray-200: var(--border);
+          --gray-300: var(--border);
+          --gray-400: var(--border-strong);
+          --gray-500: var(--fg-subtle);
+          --gray-600: var(--fg-muted);
+
+          /* ===== Glass / depth ===== */
+          --glass-bg: rgba(255, 255, 255, 0.035);
+          --glass-bg-strong: rgba(255, 255, 255, 0.05);
+          --glass-blur: 16px;
+          --glass-border: rgba(255, 255, 255, 0.08);
+          --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
+          --ambient: radial-gradient(900px 500px at 12% -8%, rgba(99, 102, 241, 0.12), transparent 60%),
+                     radial-gradient(800px 480px at 100% 0%, rgba(129, 140, 248, 0.09), transparent 55%);
+
+          /* ===== JSON syntax (light-aware, overridden under vscode-light) ===== */
+          --syn-key: #7ee787;
+          --syn-string: #a5d6ff;
+          --syn-number: #79c0ff;
+          --syn-bool: #ff7b72;
+          --syn-null: #ff7b72;
+
           /* Method Colors */
           --method-get: #00d4aa;
           --method-post: #58a6ff;
@@ -46,17 +84,17 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           --method-patch: #bc8cff;
           --method-head: #39d2c0;
           --method-options: #8b949e;
-          
+
           /* Gradients */
-          --gradient-primary: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
-          --gradient-success: linear-gradient(135deg, #00d4aa 0%, #00b894 100%);
+          --gradient-primary: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+          --gradient-success: linear-gradient(135deg, #3fb950 0%, #2ea043 100%);
           --gradient-error: linear-gradient(135deg, #f85149 0%, #da3633 100%);
-          
+
           /* Shadows */
           --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
           --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.4);
           --shadow-2xl: 0 16px 48px rgba(0, 0, 0, 0.5);
-          
+
           /* Border Radius */
           --radius-sm: 6px;
           --radius: 8px;
@@ -84,6 +122,27 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           --space-16: 4rem;
         }
 
+        /* ===== Light / high-contrast-light: tone the vibrant layer down for legibility ===== */
+        body.vscode-light,
+        body.vscode-high-contrast-light {
+          --accent: #4f46e5;
+          --accent-soft: rgba(79, 70, 229, 0.13);
+          --accent-glow: rgba(79, 70, 229, 0.24);
+          --glass-bg: rgba(0, 0, 0, 0.025);
+          --glass-bg-strong: rgba(0, 0, 0, 0.04);
+          --glass-blur: 10px;
+          --glass-border: rgba(0, 0, 0, 0.08);
+          --glass-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
+          --ambient: radial-gradient(900px 500px at 12% -8%, rgba(99, 102, 241, 0.09), transparent 60%),
+                     radial-gradient(800px 480px at 100% 0%, rgba(129, 140, 248, 0.07), transparent 55%);
+          /* Syntax tuned for a light editor background */
+          --syn-key: #116329;
+          --syn-string: #0a3069;
+          --syn-number: #0550ae;
+          --syn-bool: #cf222e;
+          --syn-null: #cf222e;
+        }
+
         /* Minimal Fast Animations Only */
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -100,17 +159,32 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           box-sizing: border-box;
         }
 
-        /* Ultra Dark Professional Body */
+        /* Theme-adaptive body with a fixed ambient vibrant glow */
         body {
           font-family: var(--font-family);
           line-height: 1.5;
-          background: #0d1117;
-          color: #e6edf3;
+          background: var(--bg);
+          color: var(--fg);
           min-height: 100vh;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
           margin: 0;
           padding: 0;
+        }
+
+        /* Ambient gradient sits behind everything, doesn't scroll, doesn't capture clicks */
+        body::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background: var(--ambient);
+          pointer-events: none;
+          z-index: 0;
+        }
+        .main-container,
+        #responseContainer {
+          position: relative;
+          z-index: 1;
         }
 
         /* Main Container */
@@ -142,7 +216,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         .card-title {
           font-size: 1.125rem;
           font-weight: 600;
-          color: #e6edf3;
+          color: var(--fg);
           margin: 0;
           display: flex;
           align-items: center;
@@ -155,7 +229,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .card-description {
-          color: #8b949e;
+          color: var(--fg-muted);
           font-size: 1rem;
           font-weight: 400;
         }
@@ -174,16 +248,18 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           display: flex;
           align-items: center;
           flex: 1;
-          background: #161b22;
-          border: 1px solid #30363d;
+          background: var(--surface);
+          border: 1px solid var(--border);
           border-radius: var(--radius-xl);
           overflow: hidden;
-          height: 46px;
+          height: 48px;
+          box-shadow: var(--glass-shadow);
           transition: var(--transition);
         }
 
         .request-bar:focus-within {
-          border-color: #484f58;
+          border-color: var(--accent);
+          box-shadow: var(--glass-shadow), 0 0 0 3px var(--accent-soft);
         }
 
         @media (max-width: 768px) {
@@ -202,7 +278,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           background: transparent !important;
           color: var(--method-get) !important;
           border: none;
-          border-right: 1px solid #30363d;
+          border-right: 1px solid var(--border);
           text-align: center;
           border-radius: 0;
           box-shadow: none;
@@ -253,7 +329,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .method-select:hover {
-          background: #1c2128 !important;
+          background: var(--surface-2) !important;
         }
 
         .method-select:focus {
@@ -266,8 +342,8 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
 
         /* Dropdown options */
         .method-select option {
-          background: #161b22 !important;
-          color: #e6edf3 !important;
+          background: var(--surface) !important;
+          color: var(--fg) !important;
           font-weight: 700;
           padding: var(--space-3);
           text-transform: uppercase;
@@ -277,7 +353,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .method-select option:checked {
-          background: #21262d !important;
+          background: var(--surface-2) !important;
         }
 
         /* Dark URL Input */
@@ -290,7 +366,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         .url-input-icon {
           position: absolute;
           left: var(--space-4);
-          color: #484f58;
+          color: var(--border-strong);
           font-size: 1.125rem;
           pointer-events: none;
           transition: var(--transition);
@@ -309,7 +385,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           border: none;
           border-radius: 0;
           background: transparent;
-          color: #e6edf3;
+          color: var(--fg);
           font-size: 0.875rem;
           font-family: var(--font-mono);
           transition: var(--transition);
@@ -331,14 +407,14 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .url-input::placeholder {
-          color: #484f58;
+          color: var(--border-strong);
           font-style: normal;
           font-weight: 400;
           transition: var(--transition);
         }
 
         .url-input:focus::placeholder {
-          color: #30363d;
+          color: var(--border);
         }
 
         /* Action Buttons */
@@ -384,28 +460,30 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
 
 
         .send-button {
-          background: #e6edf3;
-          color: #0d1117;
+          background: var(--gradient-primary);
+          color: #ffffff;
+          box-shadow: 0 4px 16px var(--accent-glow);
         }
 
         .send-button:hover {
-          background: #ffffff;
-          box-shadow: 0 2px 12px rgba(230, 237, 243, 0.15);
+          box-shadow: 0 6px 22px var(--accent-glow), 0 0 0 1px var(--accent);
+          transform: translateY(-1px);
         }
 
         .send-button:active {
           transform: scale(0.97);
-          background: #c9d1d9;
+          box-shadow: 0 2px 10px var(--accent-glow);
         }
 
         .send-button.is-cancelling {
-          background: #f85149;
+          background: var(--error);
           color: #ffffff;
+          box-shadow: 0 4px 16px rgba(248, 81, 73, 0.3);
         }
 
         .send-button.is-cancelling:hover {
-          background: #da3633;
-          box-shadow: 0 2px 12px rgba(248, 81, 73, 0.25);
+          background: var(--error-dark);
+          box-shadow: 0 6px 22px rgba(248, 81, 73, 0.35);
         }
 
         .send-button .material-icons {
@@ -413,16 +491,17 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .save-button {
-          background: #21262d;
-          color: #8b949e;
-          border: 1px solid #30363d;
+          background: var(--glass-bg-strong);
+          -webkit-backdrop-filter: blur(var(--glass-blur));
+          backdrop-filter: blur(var(--glass-blur));
+          color: var(--fg-muted);
+          border: 1px solid var(--glass-border);
         }
 
         .save-button:hover {
-          background: #30363d;
-          color: #e6edf3;
-          transform: none;
-          box-shadow: none;
+          color: var(--accent);
+          border-color: var(--accent);
+          box-shadow: 0 0 0 3px var(--accent-soft);
         }
 
         .save-button:active {
@@ -459,13 +538,17 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           animation: spin 1s linear infinite;
         }
 
-        /* Dark Minimal Tabs */
+        /* Glass tab strip — top of the request card */
         .tabs {
           display: flex;
-          background: transparent;
-          padding: 0;
-          margin: 0;
-          border-bottom: 1px solid #21262d;
+          background: var(--glass-bg);
+          -webkit-backdrop-filter: blur(var(--glass-blur));
+          backdrop-filter: blur(var(--glass-blur));
+          padding: 0 var(--space-2);
+          margin: var(--space-5) 0 0 0;
+          border: 1px solid var(--glass-border);
+          border-bottom: 1px solid var(--border);
+          border-radius: var(--radius-lg) var(--radius-lg) 0 0;
           gap: 0;
           position: relative;
         }
@@ -474,7 +557,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           flex: none;
           padding: var(--space-3) var(--space-5);
           background: transparent;
-          color: #8b949e;
+          color: var(--fg-muted);
           border: none;
           border-radius: 0;
           font-weight: 600;
@@ -493,13 +576,13 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .tab:hover {
-          color: #e6edf3;
+          color: var(--fg);
         }
 
         .tab.active {
-          color: #e6edf3;
-          border-bottom-color: var(--primary);
-          text-shadow: 0 0 8px rgba(0, 212, 170, 0.15);
+          color: var(--accent);
+          border-bottom-color: var(--accent);
+          text-shadow: 0 0 12px var(--accent-soft);
         }
 
         .tab .material-icons {
@@ -507,9 +590,16 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
 
-        /* Tab Content */
+        /* Glass tab content — body of the request card, merges with .tabs above */
         .tab-content {
           padding: var(--space-5);
+          background: var(--glass-bg);
+          -webkit-backdrop-filter: blur(var(--glass-blur));
+          backdrop-filter: blur(var(--glass-blur));
+          border: 1px solid var(--glass-border);
+          border-top: none;
+          border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+          box-shadow: var(--glass-shadow);
         }
 
         .content-section {
@@ -530,29 +620,29 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         .param-table {
           display: flex;
           flex-direction: column;
-          border: 1px solid #21262d;
+          border: 1px solid var(--surface-2);
           border-radius: var(--radius-lg);
           overflow: hidden;
           margin-bottom: var(--space-4);
-          background: #0d1117;
+          background: var(--bg);
         }
 
         .param-table-header {
           display: grid;
           grid-template-columns: 50px 1fr 1fr 50px;
           gap: 0;
-          background: #161b22;
-          border-bottom: 1px solid #21262d;
+          background: var(--surface);
+          border-bottom: 1px solid var(--surface-2);
           font-size: 0.75rem;
           font-weight: 600;
-          color: #8b949e;
+          color: var(--fg-muted);
           text-transform: uppercase;
           letter-spacing: 0.05em;
         }
 
         .param-table-header span {
           padding: var(--space-3) var(--space-4);
-          border-right: 1px solid #21262d;
+          border-right: 1px solid var(--surface-2);
         }
 
         .param-table-header span:last-child {
@@ -569,8 +659,8 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           grid-template-columns: 50px 1fr 1fr 50px;
           gap: 0;
           align-items: center;
-          background: #0d1117;
-          border-bottom: 1px solid #21262d;
+          background: var(--bg);
+          border-bottom: 1px solid var(--surface-2);
           transition: var(--transition);
           position: relative;
         }
@@ -580,24 +670,24 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .param-row:hover {
-          background: #161b22;
+          background: var(--surface);
           border-left: 2px solid var(--primary);
           padding-left: calc(var(--space-4) - 2px);
         }
 
         .param-row.disabled {
-          background: #0d1117;
+          background: var(--bg);
           opacity: 0.5;
         }
 
         .param-row.disabled input[type="text"] {
-          color: #484f58;
+          color: var(--border-strong);
           text-decoration: line-through;
         }
 
         .param-row > * {
           padding: var(--space-3) var(--space-4);
-          border-right: 1px solid #21262d;
+          border-right: 1px solid var(--surface-2);
           height: 100%;
           display: flex;
           align-items: center;
@@ -628,9 +718,9 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           max-width: 20px;
           max-height: 20px;
           flex-shrink: 0;
-          border: 2px solid #30363d;
+          border: 2px solid var(--border);
           border-radius: 4px;
-          background: #0d1117;
+          background: var(--bg);
           cursor: pointer;
           margin: 0;
           position: relative;
@@ -654,7 +744,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           top: 1px;
           width: 5px;
           height: 10px;
-          border: solid #0d1117;
+          border: solid var(--bg);
           border-width: 0 2px 2px 0;
           transform: rotate(45deg);
         }
@@ -672,7 +762,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           padding: 0;
           border: none;
           background: transparent;
-          color: #e6edf3;
+          color: var(--fg);
           font-size: 0.875rem;
           font-family: var(--font-family);
           transition: var(--transition);
@@ -683,7 +773,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .param-row input[type="text"]::placeholder {
-          color: #484f58;
+          color: var(--border-strong);
           font-weight: 400;
         }
 
@@ -738,8 +828,8 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           width: 100%;
           padding: var(--space-3);
           background: transparent;
-          color: #484f58;
-          border: 1px dashed #30363d;
+          color: var(--border-strong);
+          border: 1px dashed var(--border);
           border-radius: var(--radius-lg);
           font-weight: 500;
           cursor: pointer;
@@ -754,7 +844,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .add-param-button:hover {
-          background: #161b22;
+          background: var(--surface);
           border-color: var(--primary);
           color: var(--primary);
           border-style: solid;
@@ -764,15 +854,15 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
 
 
 
-        /* Dark Textarea */
+        /* Code Textarea */
         textarea {
           width: 100%;
           min-height: 200px;
           padding: var(--space-4);
-          border: 1px solid #21262d;
+          border: 1px solid var(--border);
           border-radius: var(--radius-lg);
-          background: #0d1117;
-          color: #e6edf3;
+          background: var(--input-bg);
+          color: var(--input-fg);
           font-size: 0.875rem;
           font-family: var(--font-mono);
           line-height: 1.6;
@@ -782,43 +872,49 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         textarea:hover {
-          border-color: #30363d;
+          border-color: var(--border-strong);
           box-shadow: none;
           transform: none;
         }
 
         textarea:focus {
           outline: none;
-          border-color: var(--primary);
-          box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.1);
+          border-color: var(--accent);
+          box-shadow: 0 0 0 3px var(--accent-soft);
           transform: none;
         }
 
         textarea::placeholder {
-          color: #484f58;
+          color: var(--border-strong);
           font-style: normal;
           transition: var(--transition);
         }
 
         textarea:focus::placeholder {
-          color: #30363d;
+          color: var(--border);
         }
 
-        /* Dark Response Container */
+        /* Glass Response Container */
         .response-container {
-          background: #161b22;
+          background: var(--glass-bg);
           border-radius: var(--radius-lg);
-          box-shadow: none;
+          box-shadow: var(--glass-shadow);
           overflow: hidden;
-          border: 1px solid #21262d;
-          backdrop-filter: none;
+          border: 1px solid var(--glass-border);
+          -webkit-backdrop-filter: blur(var(--glass-blur));
+          backdrop-filter: blur(var(--glass-blur));
           transition: var(--transition);
           margin-top: var(--space-5);
         }
 
         .response-container:hover {
-          box-shadow: none;
+          box-shadow: var(--glass-shadow);
         }
+
+        /* Accent edge that reflects response status */
+        .response-container.response-success { border-top: 2px solid var(--success); }
+        .response-container.response-error { border-top: 2px solid var(--error); }
+        .response-container.response-warning { border-top: 2px solid var(--warning); }
 
         .response-container.response-success {
           border-left: none;
@@ -835,8 +931,8 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         /* Dark Response Header */
         .response-header {
           padding: var(--space-4) var(--space-5);
-          background: #161b22;
-          border-bottom: 1px solid #21262d;
+          background: var(--surface);
+          border-bottom: 1px solid var(--surface-2);
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -871,11 +967,11 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           background: currentColor;
           flex-shrink: 0;
         }
-        .status-pill.success { color: #3fb950; background: rgba(63, 185, 80, 0.12); border-color: rgba(63, 185, 80, 0.35); }
-        .status-pill.redirect { color: #58a6ff; background: rgba(88, 166, 255, 0.12); border-color: rgba(88, 166, 255, 0.35); }
-        .status-pill.warning { color: #d29922; background: rgba(210, 153, 34, 0.12); border-color: rgba(210, 153, 34, 0.35); }
-        .status-pill.error { color: #f85149; background: rgba(248, 81, 73, 0.12); border-color: rgba(248, 81, 73, 0.35); }
-        .status-text { color: #c9d1d9; font-weight: 500; margin-left: var(--space-2); }
+        .status-pill.success { color: var(--success); background: rgba(63, 185, 80, 0.12); border-color: rgba(63, 185, 80, 0.35); }
+        .status-pill.redirect { color: var(--info); background: rgba(88, 166, 255, 0.12); border-color: rgba(88, 166, 255, 0.35); }
+        .status-pill.warning { color: var(--warning); background: rgba(210, 153, 34, 0.12); border-color: rgba(210, 153, 34, 0.35); }
+        .status-pill.error { color: var(--error); background: rgba(248, 81, 73, 0.12); border-color: rgba(248, 81, 73, 0.35); }
+        .status-text { color: var(--fg-soft); font-weight: 500; margin-left: var(--space-2); }
 
         /* While empty, hide the response chrome and show only the placeholder */
         .response-container.is-empty .response-header,
@@ -894,7 +990,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           justify-content: center;
           gap: var(--space-3);
           padding: 3rem 1.5rem;
-          color: #6e7681;
+          color: var(--fg-subtle);
           text-align: center;
         }
         .response-empty .material-icons {
@@ -904,7 +1000,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         .response-empty .response-empty-title {
           font-size: 0.95rem;
           font-weight: 600;
-          color: #8b949e;
+          color: var(--fg-muted);
         }
         .response-empty .response-empty-hint {
           font-size: 0.8125rem;
@@ -916,21 +1012,21 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           align-items: center;
           gap: var(--space-2);
           font-size: 0.8125rem;
-          color: #8b949e;
+          color: var(--fg-muted);
           font-weight: 500;
         }
 
         .response-time .material-icons,
         .response-size .material-icons {
           font-size: 0.875rem;
-          color: #6e7681;
+          color: var(--fg-subtle);
         }
 
         /* Dark Response Tabs */
         .response-tabs {
           display: flex;
           background: transparent;
-          border-bottom: 1px solid #21262d;
+          border-bottom: 1px solid var(--surface-2);
           padding: 0;
           margin: 0;
           gap: 0;
@@ -941,7 +1037,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           flex: none;
           padding: var(--space-3) var(--space-4);
           background: transparent;
-          color: #8b949e;
+          color: var(--fg-muted);
           border: none;
           border-radius: 0;
           font-weight: 500;
@@ -958,16 +1054,17 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .response-tab:hover {
-          color: #e6edf3;
+          color: var(--fg);
           background: transparent;
         }
 
         .response-tab.active {
           background: transparent;
-          color: var(--primary);
+          color: var(--accent);
           box-shadow: none;
           font-weight: 600;
-          border-bottom-color: var(--primary);
+          border-bottom-color: var(--accent);
+          text-shadow: 0 0 12px var(--accent-soft);
         }
 
         .response-tab.active::after {
@@ -975,8 +1072,8 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .response-tab-badge {
-          background: #30363d;
-          color: #8b949e;
+          background: var(--border);
+          color: var(--fg-muted);
           font-size: 0.7rem;
           padding: var(--space-1) var(--space-2);
           border-radius: var(--radius-full);
@@ -988,7 +1085,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
 
         .response-tab.active .response-tab-badge {
           background: var(--primary);
-          color: #0d1117;
+          color: var(--bg);
         }
 
         /* Response Content */
@@ -1010,7 +1107,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         .response-body {
           padding: var(--space-5);
           padding-left: var(--space-8);
-          background: #0d1117;
+          background: var(--bg);
           font-family: var(--font-mono);
           font-size: 0.8125rem;
           line-height: 1.7;
@@ -1020,15 +1117,15 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           overflow-y: auto;
           position: relative;
           border-radius: 0;
-          color: #e6edf3;
-          border-left: 3px solid #21262d;
+          color: var(--fg);
+          border-left: 3px solid var(--surface-2);
         }
 
         /* Dark Response Headers Table */
         .headers-table {
           width: 100%;
           border-collapse: collapse;
-          background: #0d1117;
+          background: var(--bg);
           border-radius: 0;
           overflow: hidden;
           box-shadow: none;
@@ -1040,21 +1137,21 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         .headers-table td {
           padding: var(--space-3) var(--space-5);
           text-align: left;
-          border-bottom: 1px solid #21262d;
+          border-bottom: 1px solid var(--surface-2);
           font-size: 0.8125rem;
         }
 
         .headers-table th {
-          background: #161b22;
+          background: var(--surface);
           font-weight: 600;
-          color: #8b949e;
+          color: var(--fg-muted);
           letter-spacing: 0.025em;
           text-transform: uppercase;
           font-size: 0.7rem;
         }
 
         .headers-table td {
-          color: #c9d1d9;
+          color: var(--fg-soft);
           font-family: var(--font-mono);
           font-weight: 500;
         }
@@ -1069,7 +1166,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .headers-table tr:hover {
-          background: #161b22;
+          background: var(--surface);
         }
 
         /* Dark Response Controls */
@@ -1078,8 +1175,8 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           justify-content: space-between;
           align-items: center;
           padding: var(--space-3) var(--space-5);
-          background: #161b22;
-          border-bottom: 1px solid #21262d;
+          background: var(--surface);
+          border-bottom: 1px solid var(--surface-2);
           gap: var(--space-3);
           flex-wrap: wrap;
         }
@@ -1098,7 +1195,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         .response-search > .material-icons:first-child {
           position: absolute;
           left: var(--space-3);
-          color: #484f58;
+          color: var(--border-strong);
           font-size: 1rem;
           pointer-events: none;
           z-index: 1;
@@ -1108,17 +1205,17 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           flex: 1;
           min-width: 0;
           padding: var(--space-2) var(--space-3) var(--space-2) var(--space-10);
-          border: 1px solid #30363d;
+          border: 1px solid var(--border);
           border-radius: var(--radius);
           font-size: 0.8125rem;
-          background: #0d1117;
-          color: #e6edf3;
+          background: var(--bg);
+          color: var(--fg);
           transition: var(--transition);
         }
 
         .search-count {
           font-size: 0.75rem;
-          color: #8b949e;
+          color: var(--fg-muted);
           white-space: nowrap;
           min-width: 34px;
           text-align: right;
@@ -1130,15 +1227,15 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           justify-content: center;
           padding: 2px;
           background: transparent;
-          border: 1px solid #30363d;
+          border: 1px solid var(--border);
           border-radius: var(--radius-sm);
-          color: #8b949e;
+          color: var(--fg-muted);
           cursor: pointer;
           transition: var(--transition);
         }
         .search-nav-btn:hover:not(:disabled) {
-          background: #21262d;
-          color: #e6edf3;
+          background: var(--surface-2);
+          color: var(--fg);
         }
         .search-nav-btn:disabled {
           opacity: 0.4;
@@ -1161,7 +1258,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         .response-search input:focus {
           outline: none;
           border-color: var(--primary);
-          background: #0d1117;
+          background: var(--bg);
           box-shadow: 0 0 0 2px rgba(0, 212, 170, 0.1);
         }
 
@@ -1169,7 +1266,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           display: flex;
           gap: 0;
           align-items: center;
-          background: #21262d;
+          background: var(--surface-2);
           padding: 2px;
           border-radius: var(--radius);
         }
@@ -1177,7 +1274,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         .response-option-btn {
           padding: var(--space-2) var(--space-4);
           background: transparent;
-          color: #8b949e;
+          color: var(--fg-muted);
           border: none;
           border-radius: var(--radius-sm);
           font-size: 0.75rem;
@@ -1192,14 +1289,14 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .response-option-btn:hover {
-          background: #30363d;
-          color: #e6edf3;
+          background: var(--border);
+          color: var(--fg);
           box-shadow: none;
         }
 
         .response-option-btn.active {
-          background: #30363d;
-          color: #e6edf3;
+          background: var(--border);
+          color: var(--fg);
           box-shadow: none;
           font-weight: 600;
         }
@@ -1220,9 +1317,9 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         .copy-as-curl {
           width: 36px;
           height: 36px;
-          background: #21262d;
-          color: #8b949e;
-          border: 1px solid #30363d;
+          background: var(--surface-2);
+          color: var(--fg-muted);
+          border: 1px solid var(--border);
           border-radius: var(--radius);
           cursor: pointer;
           transition: var(--transition);
@@ -1237,17 +1334,17 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
 
         .copy-button:hover,
         .copy-as-curl:hover {
-          background: #30363d;
-          color: #e6edf3;
+          background: var(--border);
+          color: var(--fg);
           transform: none;
           box-shadow: none;
-          border-color: #484f58;
+          border-color: var(--border-strong);
         }
 
         .copy-button.success,
         .copy-as-curl.success {
           background: var(--primary);
-          color: #0d1117;
+          color: var(--bg);
           border-color: var(--primary);
         }
 
@@ -1352,7 +1449,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           line-height: 1.7;
           white-space: pre;
           padding: var(--space-5);
-          background: #0d1117;
+          background: var(--bg);
           border-radius: 0;
           overflow-x: auto;
           border: none;
@@ -1360,12 +1457,12 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           box-shadow: none;
         }
 
-        .json-string { color: #a5d6ff; font-weight: 500; }
-        .json-number { color: #79c0ff; font-weight: 600; }
-        .json-boolean { color: #ff7b72; font-weight: 600; }
-        .json-null { color: #8b949e; font-style: italic; }
-        .json-bracket { color: #8b949e; font-weight: 600; }
-        .json-key { color: #7ee787; font-weight: 600; }
+        .json-string { color: var(--syn-string); font-weight: 500; }
+        .json-number { color: var(--syn-number); font-weight: 600; }
+        .json-boolean { color: var(--syn-bool); font-weight: 600; }
+        .json-null { color: var(--fg-muted); font-style: italic; }
+        .json-bracket { color: var(--fg-muted); font-weight: 600; }
+        .json-key { color: var(--syn-key); font-weight: 600; }
 
         /* Dark Save Dialog */
         .save-dialog {
@@ -1391,7 +1488,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .save-dialog-content {
-          background: #161b22;
+          background: var(--surface);
           border-radius: var(--radius-xl);
           padding: var(--space-8);
           width: 540px;
@@ -1399,7 +1496,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           box-shadow: var(--shadow-2xl);
           transform: translateY(-30px) scale(0.95);
           transition: var(--transition);
-          border: 1px solid #30363d;
+          border: 1px solid var(--border);
         }
 
         .save-dialog.active .save-dialog-content {
@@ -1413,7 +1510,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           display: flex;
           align-items: center;
           gap: var(--space-3);
-          color: #e6edf3;
+          color: var(--fg);
           letter-spacing: -0.025em;
         }
 
@@ -1427,7 +1524,25 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           flex-direction: column;
           gap: var(--space-6);
         }
-        
+
+        .dialog-select {
+          width: 100%;
+          padding: var(--space-3) var(--space-4);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          background: var(--input-bg);
+          color: var(--input-fg);
+          font-size: 0.875rem;
+          font-family: var(--font-family);
+          cursor: pointer;
+          transition: var(--transition);
+        }
+        .dialog-select:focus {
+          outline: none;
+          border-color: var(--accent);
+          box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
         .dialog-actions {
           display: flex;
           justify-content: flex-end;
@@ -1450,21 +1565,21 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .dialog-cancel {
-          background: #21262d;
-          color: #8b949e;
-          border: 1px solid #30363d;
+          background: var(--surface-2);
+          color: var(--fg-muted);
+          border: 1px solid var(--border);
         }
 
         .dialog-cancel:hover {
-          background: #30363d;
-          color: #e6edf3;
+          background: var(--border);
+          color: var(--fg);
           transform: none;
           box-shadow: none;
         }
 
         .dialog-save {
           background: var(--primary);
-          color: #0d1117;
+          color: var(--bg);
         }
 
         .dialog-save:hover {
@@ -1498,15 +1613,15 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           justify-content: space-between;
           align-items: center;
           padding: var(--space-3);
-          background: #0d1117;
-          border: 1px solid #21262d;
+          background: var(--bg);
+          border: 1px solid var(--surface-2);
           border-radius: var(--radius);
           margin-bottom: var(--space-2);
           transition: var(--transition);
         }
 
         .timing-item:hover {
-          border-color: #30363d;
+          border-color: var(--border);
           box-shadow: none;
         }
 
@@ -1623,16 +1738,16 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         ::-webkit-scrollbar-track {
-          background: #0d1117;
+          background: var(--bg);
         }
 
         ::-webkit-scrollbar-thumb {
-          background: #30363d;
+          background: var(--border);
           border-radius: 3px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-          background: #484f58;
+          background: var(--border-strong);
         }
 
         /* Focus Styles */
@@ -1647,7 +1762,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           font-size: 0.8125rem;
           line-height: 1.6;
           padding: 1.5rem;
-          background: #0d1117;
+          background: var(--bg);
           border-radius: 0;
           overflow-x: auto;
           border: none;
@@ -1658,7 +1773,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           font-family: var(--font-mono);
           font-size: 0.8125rem;
           line-height: 1.5;
-          background: #0d1117;
+          background: var(--bg);
           border: none;
           border-radius: 0;
           padding: 1rem;
@@ -1668,24 +1783,24 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .json-key {
-          color: #7ee787;
+          color: var(--syn-key);
           font-weight: 600;
         }
 
         .json-string {
-          color: #a5d6ff;
+          color: var(--syn-string);
         }
 
         .json-number {
-          color: #79c0ff;
+          color: var(--syn-number);
         }
 
         .json-boolean {
-          color: #ff7b72;
+          color: var(--syn-bool);
         }
 
         .json-null {
-          color: #8b949e;
+          color: var(--fg-muted);
           font-style: italic;
         }
 
@@ -1716,7 +1831,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           margin-right: 4px;
           cursor: pointer;
           font-size: 10px;
-          color: #6e7681;
+          color: var(--fg-subtle);
           border: none;
           background: transparent;
           border-radius: 3px;
@@ -1725,8 +1840,8 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .json-toggle:hover {
-          background: #21262d;
-          color: #e6edf3;
+          background: var(--surface-2);
+          color: var(--fg);
         }
 
         .json-toggle.collapsed .toggle-icon {
@@ -1746,13 +1861,13 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .json-bracket {
-          color: #8b949e;
+          color: var(--fg-muted);
         }
 
         .json-children {
           display: block;
           margin-left: 20px;
-          border-left: 1px dashed #30363d;
+          border-left: 1px dashed var(--border);
           padding-left: 8px;
         }
 
@@ -1761,14 +1876,14 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .json-collapsed-preview {
-          color: #484f58;
+          color: var(--border-strong);
           font-style: italic;
           cursor: pointer;
           display: none;
         }
 
         .json-collapsed-preview:hover {
-          color: #8b949e;
+          color: var(--fg-muted);
         }
 
         .json-toggle.collapsed + .json-bracket + .json-collapsed-preview {
@@ -1795,9 +1910,9 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           padding: 6px 10px;
           font-size: 0.75rem;
           font-weight: 500;
-          color: #8b949e;
-          background: #21262d;
-          border: 1px solid #30363d;
+          color: var(--fg-muted);
+          background: var(--surface-2);
+          border: 1px solid var(--border);
           border-radius: 6px;
           cursor: pointer;
           transition: all 0.15s ease;
@@ -1807,7 +1922,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
 
         .json-expand-btn:hover {
           background: var(--primary);
-          color: #0d1117;
+          color: var(--bg);
           border-color: var(--primary);
           box-shadow: none;
         }
@@ -1834,15 +1949,18 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           align-items: flex-start;
         }
 
-        /* Dark Request Type Tabs */
+        /* Glass Request Type Tabs (REST / GraphQL segmented control) */
         .request-type-tabs {
           display: inline-flex;
           gap: var(--space-1);
           margin-bottom: var(--space-5);
-          background: #161b22;
-          padding: 3px;
+          background: var(--glass-bg);
+          -webkit-backdrop-filter: blur(var(--glass-blur));
+          backdrop-filter: blur(var(--glass-blur));
+          padding: 4px;
           border-radius: var(--radius);
-          border: 1px solid #21262d;
+          border: 1px solid var(--glass-border);
+          box-shadow: var(--glass-shadow);
         }
 
         .type-tab {
@@ -1850,7 +1968,7 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           cursor: pointer;
           font-weight: 500;
           font-size: 0.8125rem;
-          color: #8b949e;
+          color: var(--fg-muted);
           transition: var(--transition);
           position: relative;
           background: transparent;
@@ -1861,13 +1979,14 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
         }
 
         .type-tab:hover {
-          color: #e6edf3;
+          color: var(--fg);
         }
 
         .type-tab.active {
-          color: var(--primary);
-          background: #21262d;
-          font-weight: 600;
+          color: #ffffff;
+          background: var(--gradient-primary);
+          box-shadow: 0 2px 10px var(--accent-glow);
+          font-weight: 700;
         }
 
         .request-content {
@@ -2183,8 +2302,16 @@ export function getWebviewContent(initialState: any, iconCssUri?: string): strin
           </div>
           <div class="save-dialog-form">
             <div>
-              <label for="request-name" style="display: block; margin-bottom: 0.75rem; font-weight: 500; color: #8b949e;">Request Name</label>
+              <label for="request-name" style="display: block; margin-bottom: 0.75rem; font-weight: 500; color: var(--fg-muted);">Request Name</label>
               <input type="text" id="request-name" class="url-input" placeholder="My Awesome API Request">
+            </div>
+            <div>
+              <label for="collection-select" style="display: block; margin: 0.5rem 0 0.75rem; font-weight: 500; color: var(--fg-muted);">Collection</label>
+              <select id="collection-select" class="dialog-select">
+                ${collections.map(c => `<option value="${c.id}"${c.id === currentCollectionId ? ' selected' : ''}>${escapeForAttr(c.name)}</option>`).join('')}
+                <option value="__new__">➕ New collection…</option>
+              </select>
+              <input type="text" id="new-collection-name" class="url-input" placeholder="New collection name" style="display: none; margin-top: 0.75rem;">
             </div>
             <div class="dialog-actions">
               <button id="dialog-cancel" class="dialog-button dialog-cancel">
@@ -3584,10 +3711,28 @@ function showError(message, data, headers = {}, status = null, statusText = null
           });
         }
 
+        // Reveal the free-text input only when "New collection…" is picked.
+        function onCollectionSelectChange() {
+          const select = document.getElementById('collection-select');
+          const newInput = document.getElementById('new-collection-name');
+          if (!select || !newInput) return;
+          if (select.value === '__new__') {
+            newInput.style.display = 'block';
+            setTimeout(() => newInput.focus(), 50);
+          } else {
+            newInput.style.display = 'none';
+          }
+        }
+
         function openSaveDialog() {
           const dialog = document.getElementById('save-dialog');
           const nameInput = document.getElementById('request-name');
-          
+          const select = document.getElementById('collection-select');
+          // If there are no collections yet, default straight to the new-collection field.
+          if (select && (select.value === '' || select.options.length === 1)) {
+            select.value = '__new__';
+          }
+          onCollectionSelectChange();
           dialog.classList.add('active');
           setTimeout(() => nameInput.focus(), 100);
         }
@@ -3604,6 +3749,19 @@ function showError(message, data, headers = {}, status = null, statusText = null
             return;
           }
 
+          const select = document.getElementById('collection-select');
+          const newInput = document.getElementById('new-collection-name');
+          let collectionId = select ? select.value : '';
+          let newCollectionName = '';
+          if (collectionId === '__new__') {
+            newCollectionName = (newInput && newInput.value.trim()) || '';
+            if (!newCollectionName) {
+              if (newInput) newInput.focus();
+              return;
+            }
+            collectionId = '';
+          }
+
           const requestData = {
             name: name.trim(),
             method: document.getElementById('method-select').value,
@@ -3615,7 +3773,9 @@ function showError(message, data, headers = {}, status = null, statusText = null
 
           vscode.postMessage({
             type: 'saveRequest',
-            request: requestData
+            request: requestData,
+            collectionId: collectionId,
+            newCollectionName: newCollectionName
           });
 
           closeSaveDialog();
@@ -3657,6 +3817,8 @@ function showError(message, data, headers = {}, status = null, statusText = null
           // Dialog event listeners
           document.getElementById('dialog-cancel').addEventListener('click', closeSaveDialog);
           document.getElementById('dialog-save').addEventListener('click', saveRequest);
+          const collectionSelect = document.getElementById('collection-select');
+          if (collectionSelect) collectionSelect.addEventListener('change', onCollectionSelectChange);
           
           // Close dialog on backdrop click
           document.getElementById('save-dialog').addEventListener('click', (e) => {

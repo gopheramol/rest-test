@@ -3,6 +3,7 @@ import axios from 'axios';
 import { getWebviewContent } from '../webviews/apiRequestWebview';
 import { generateCurlCommand } from '../utils/curlGenerator';
 import { RestApiTreeProvider } from '../providers/RestApiTreeProvider';
+import { CollectionService } from '../services/CollectionService';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -63,9 +64,10 @@ interface SavedRequest {
  */
 export function registerSendRequestCommand(
   context: vscode.ExtensionContext,
-  treeProvider: RestApiTreeProvider
+  treeProvider: RestApiTreeProvider,
+  collectionService: CollectionService
 ): vscode.Disposable {
-  return vscode.commands.registerCommand('restApiTest.sendRequest', async (savedRequest?: SavedRequest) => {
+  return vscode.commands.registerCommand('restApiTest.sendRequest', async (savedRequest?: SavedRequest, currentCollectionId?: string) => {
     const panel = vscode.window.createWebviewPanel(
       'restApiTest',
       savedRequest ? `REST TEST - ${savedRequest.name}` : 'REST TEST',
@@ -91,7 +93,8 @@ export function registerSendRequestCommand(
     const iconCssUri = panel.webview.asWebviewUri(
       vscode.Uri.joinPath(context.extensionUri, 'media', 'material-icons.css')
     ).toString();
-    panel.webview.html = getWebviewContent(storedState, iconCssUri);
+    const collectionsList = collectionService.getCollections().map(c => ({ id: c.id, name: c.name }));
+    panel.webview.html = getWebviewContent(storedState, iconCssUri, collectionsList, currentCollectionId);
 
     // Tracks the in-flight request for this panel so it can be cancelled.
     let activeController: AbortController | null = null;
@@ -110,19 +113,20 @@ export function registerSendRequestCommand(
 
         case 'saveRequest': {
           const requestData = message.request;
-          const savedRequests = context.globalState.get<SavedRequest[]>('restApiTesterSavedRequests', []);
 
-          // Check if request with same name exists
-          const existingIndex = savedRequests.findIndex(req => req.name === requestData.name);
-          if (existingIndex !== -1) {
-            // Update existing request
-            savedRequests[existingIndex] = requestData;
-          } else {
-            // Add new request
-            savedRequests.push(requestData);
+          // Resolve the destination collection: either an existing id, a new
+          // collection by name, or a sensible default when neither is given.
+          let collectionId: string | undefined = message.collectionId;
+          if (message.newCollectionName) {
+            const created = await collectionService.createCollection(message.newCollectionName);
+            collectionId = created.id;
+          }
+          if (!collectionId || !collectionService.getCollection(collectionId)) {
+            const all = collectionService.getCollections();
+            collectionId = all.length ? all[0].id : (await collectionService.createCollection('Default')).id;
           }
 
-          await context.globalState.update('restApiTesterSavedRequests', savedRequests);
+          await collectionService.upsertRequest(collectionId, requestData);
           treeProvider.refresh();
           return;
         }

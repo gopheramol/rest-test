@@ -5,26 +5,36 @@ A Visual Studio Code extension for testing REST APIs directly from your editor w
 
 ## Features
 
-- **🌙 Sleek Dark Theme**: Modern dark UI with teal accent colors for comfortable API testing
+- **🎨 Modern Glass UI**: Sleek, glassmorphic interface with an indigo accent that **adapts to your VS Code theme** — looks great in both dark and light mode
 - **🚀 High-Performance Interface**: Lightning-fast, optimized UI with minimal animations
-- **⚡ Instant Loading**: Sub-second page load times with optimized font loading
 - **📱 Responsive Design**: Clean, unified request bar layout
 
-- **Support for Multiple HTTP Methods**: 
+- **Support for Multiple HTTP Methods**:
   - GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
+
+- **REST & GraphQL**: Dedicated tabs for both REST requests and GraphQL queries/variables
+
+- **🗂️ Collections**:
+  - Organize saved requests into named collections (folders)
+  - Create, rename, and delete collections from the sidebar
+  - Move requests between collections via right-click or **drag & drop**
+  - **Import / export Postman Collection v2.1** files
 
 - **Request Configuration**:
   - Unified request bar with method selector and URL input
   - Dynamic query parameters builder with instant add/remove
   - Custom headers management
   - JSON body editor with syntax highlighting
-  
+
 - **Advanced Features**:
-  - Save and manage your API requests
+  - Save and manage your API requests in collections
   - Method-specific color coding
   - Beautiful JSON response formatting with syntax highlighting
+  - Searchable responses with match navigation
+  - Colored status pills and real request timing breakdown (DNS / TCP / TLS / transfer)
+  - Request cancellation for in-flight requests
   - Comprehensive error handling with clear messages
-  - Request state persistence across sessions  
+  - Request state persistence across sessions
   - Copy response data and cURL commands
   - Response time and size metrics
 
@@ -50,10 +60,18 @@ A Visual Studio Code extension for testing REST APIs directly from your editor w
 5. **Add Request Body** (Optional): Enter valid JSON in the body textarea (POST, PUT, PATCH)
 6. **Send Request**: Click "Send" and view the response below
 
-### Saving Requests
+### Saving Requests & Collections
 
-- Click **Save** to save the current request with a custom name
-- Access saved requests from the sidebar with method-specific icons
+- Click **Save** to save the current request — choose an existing collection or create a new one in the dialog
+- Access saved requests from the sidebar, grouped under their collections with method-specific icons
+- Use the **New Collection** button in the sidebar title bar to add a collection
+- **Right-click** a collection to rename, delete, or export it; right-click a request to move or delete it
+- **Drag & drop** requests between collections (or reorder within one)
+
+### Importing & Exporting (Postman)
+
+- **Import**: click the **Import Postman Collection** button in the sidebar title bar and pick a `*.json` Postman Collection v2.1 file — it's added as a new collection
+- **Export**: right-click a collection → **Export as Postman Collection** to save it as a Postman v2.1 `.json` file
 
 ### Response Handling
 
@@ -67,10 +85,26 @@ The extension automatically saves your last used method, URL, parameters, header
 
 ## Requirements
 
-- Visual Studio Code version 1.60.0 or higher
+- Visual Studio Code version 1.67.0 or higher
 - Internet connection for making API requests
 
 ## Release Notes
+
+### [4.1.x] - 2026-06-25
+
+#### 🗂️ Collections + Theme-Adaptive Glass UI
+
+### Added
+- **Collections**: organize saved requests into named collections (folders); create, rename, delete
+- **Drag & drop**: move requests between collections and reorder them
+- **Postman v2.1 import/export**: bring collections in from Postman or export them out
+- **Modern glass UI** that adapts to the active VS Code theme (dark *and* light)
+- Searchable responses with match navigation, colored status pills, and a real timing breakdown
+
+### Changed
+- Accent color refreshed to **indigo**, with surfaces driven by VS Code theme tokens
+- Existing saved requests are automatically migrated into a "Default" collection
+- Minimum VS Code version raised to 1.67.0 (required for tree drag & drop)
 
 ### [4.0.0] - 2026-02-23
 
