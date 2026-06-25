@@ -2,6 +2,35 @@
 
 All notable changes to the "REST TEST" extension will be documented in this file.
 
+## [4.1.3] - 2026-06-25
+
+### Added
+- **Collections**: organize saved requests into named collections (folders); create, rename, and delete from the sidebar
+- **Drag & drop**: move requests between collections and reorder them within a collection
+- **Postman Collection v2.1 import/export**: import a Postman collection as a new collection, or export any collection to a Postman `.json`
+- **Collection selector** in the Save dialog (choose an existing collection or create a new one)
+- Searchable responses with previous/next match navigation, colored status pills, and a real request timing breakdown (DNS / TCP / TLS / transfer)
+- Request cancellation for in-flight requests
+- Locally bundled Material Icons font (renders under strict CSP / offline)
+
+### Changed
+- **Theme-adaptive glass UI**: surfaces, text, and borders are driven by `--vscode-*` theme tokens, so the UI now looks good in both dark and light themes
+- Accent color refreshed to **indigo** (`#6366f1`)
+- Existing flat saved requests are automatically migrated into a "Default" collection on first launch
+- Minimum VS Code version raised to **1.67.0** (required for the tree drag & drop API)
+
+## [4.0.0] - 2026-02-23
+
+### Added
+- Complete dark theme UI overhaul with teal accent colors
+- Unified request bar merging method selector and URL input
+- Pill-style uppercase tabs (Params, Headers, Body)
+
+### Changed
+- Migrated from Postman-inspired orange to a modern dark theme
+- Removed heavy animations and unused CSS for faster load times
+- Display actual HTTP status codes for error responses (400, 404, 500)
+
 ## [3.7.0] - 2026-01-27
 
 ### Added
