@@ -35,11 +35,15 @@ function registerExecuteHistoryRequestCommand(
       vscode.ViewColumn.One,
       {
         enableScripts: true,
-        retainContextWhenHidden: true
+        retainContextWhenHidden: true,
+        localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')]
       }
     );
 
-    panel.webview.html = getWebviewContent(request);
+    const iconCssUri = panel.webview.asWebviewUri(
+      vscode.Uri.joinPath(context.extensionUri, 'media', 'material-icons.css')
+    ).toString();
+    panel.webview.html = getWebviewContent(request, iconCssUri);
     
     // Handle messages from the webview
     panel.webview.onDidReceiveMessage(async (message) => {

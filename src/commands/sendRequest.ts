@@ -72,7 +72,8 @@ export function registerSendRequestCommand(
       vscode.ViewColumn.One,
       {
         enableScripts: true,
-        retainContextWhenHidden: true
+        retainContextWhenHidden: true,
+        localResourceRoots: [vscode.Uri.joinPath(context.extensionUri, 'media')]
       }
     );
 
@@ -87,7 +88,10 @@ export function registerSendRequestCommand(
       queryParams: []
     });
 
-    panel.webview.html = getWebviewContent(storedState);
+    const iconCssUri = panel.webview.asWebviewUri(
+      vscode.Uri.joinPath(context.extensionUri, 'media', 'material-icons.css')
+    ).toString();
+    panel.webview.html = getWebviewContent(storedState, iconCssUri);
 
     // Tracks the in-flight request for this panel so it can be cancelled.
     let activeController: AbortController | null = null;

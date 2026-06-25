@@ -1,7 +1,13 @@
 /**
  * Generates HTML content for the API request webview
  */
-export function getWebviewContent(initialState: any): string {
+export function getWebviewContent(initialState: any, iconCssUri?: string): string {
+  // Prefer the locally-bundled icon font (always available, even with a strict
+  // CSP or no network); fall back to the CDN if no webview URI was provided.
+  const iconStylesheet = iconCssUri
+    ? `<link href="${iconCssUri}" rel="stylesheet">`
+    : `<link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
+      <noscript><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"></noscript>`;
   return `
     <!DOCTYPE html>
     <html lang="en">
@@ -9,8 +15,7 @@ export function getWebviewContent(initialState: any): string {
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>REST API Tester</title>
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'">
-      <noscript><link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"></noscript>
+      ${iconStylesheet}
       <style>
         :root {
           /* Color Palette */
@@ -846,6 +851,65 @@ export function getWebviewContent(initialState: any): string {
           flex-wrap: wrap;
         }
 
+        /* Colored status pill for the response status code */
+        .status-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 3px 10px;
+          border-radius: 999px;
+          font-size: 0.8125rem;
+          font-weight: 600;
+          line-height: 1.4;
+          border: 1px solid transparent;
+          white-space: nowrap;
+        }
+        .status-pill .status-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: currentColor;
+          flex-shrink: 0;
+        }
+        .status-pill.success { color: #3fb950; background: rgba(63, 185, 80, 0.12); border-color: rgba(63, 185, 80, 0.35); }
+        .status-pill.redirect { color: #58a6ff; background: rgba(88, 166, 255, 0.12); border-color: rgba(88, 166, 255, 0.35); }
+        .status-pill.warning { color: #d29922; background: rgba(210, 153, 34, 0.12); border-color: rgba(210, 153, 34, 0.35); }
+        .status-pill.error { color: #f85149; background: rgba(248, 81, 73, 0.12); border-color: rgba(248, 81, 73, 0.35); }
+        .status-text { color: #c9d1d9; font-weight: 500; margin-left: var(--space-2); }
+
+        /* While empty, hide the response chrome and show only the placeholder */
+        .response-container.is-empty .response-header,
+        .response-container.is-empty .response-tabs,
+        .response-container.is-empty .response-controls,
+        .response-container.is-empty #response-headers-section,
+        .response-container.is-empty #response-timing-section {
+          display: none;
+        }
+
+        /* Empty state shown before the first request */
+        .response-empty {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: var(--space-3);
+          padding: 3rem 1.5rem;
+          color: #6e7681;
+          text-align: center;
+        }
+        .response-empty .material-icons {
+          font-size: 2.75rem;
+          opacity: 0.5;
+        }
+        .response-empty .response-empty-title {
+          font-size: 0.95rem;
+          font-weight: 600;
+          color: #8b949e;
+        }
+        .response-empty .response-empty-hint {
+          font-size: 0.8125rem;
+        }
+
         .response-time,
         .response-size {
           display: flex;
@@ -1025,20 +1089,24 @@ export function getWebviewContent(initialState: any): string {
           align-items: center;
           gap: var(--space-2);
           flex: 1;
-          max-width: 280px;
+          max-width: 360px;
           position: relative;
         }
 
-        .response-search .material-icons {
+        /* Only the leading search glyph is absolutely positioned, not the
+           nav-button icons (which are grandchildren). */
+        .response-search > .material-icons:first-child {
           position: absolute;
           left: var(--space-3);
           color: #484f58;
           font-size: 1rem;
           pointer-events: none;
+          z-index: 1;
         }
 
         .response-search input {
-          width: 100%;
+          flex: 1;
+          min-width: 0;
           padding: var(--space-2) var(--space-3) var(--space-2) var(--space-10);
           border: 1px solid #30363d;
           border-radius: var(--radius);
@@ -1046,6 +1114,48 @@ export function getWebviewContent(initialState: any): string {
           background: #0d1117;
           color: #e6edf3;
           transition: var(--transition);
+        }
+
+        .search-count {
+          font-size: 0.75rem;
+          color: #8b949e;
+          white-space: nowrap;
+          min-width: 34px;
+          text-align: right;
+        }
+
+        .search-nav-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px;
+          background: transparent;
+          border: 1px solid #30363d;
+          border-radius: var(--radius-sm);
+          color: #8b949e;
+          cursor: pointer;
+          transition: var(--transition);
+        }
+        .search-nav-btn:hover:not(:disabled) {
+          background: #21262d;
+          color: #e6edf3;
+        }
+        .search-nav-btn:disabled {
+          opacity: 0.4;
+          cursor: default;
+        }
+        .search-nav-btn .material-icons {
+          font-size: 1rem;
+        }
+
+        mark.search-highlight {
+          background: #ffd54f;
+          color: #000;
+          border-radius: 2px;
+        }
+        mark.search-highlight.current {
+          background: #ff9800;
+          box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.4);
         }
 
         .response-search input:focus {
@@ -1927,8 +2037,8 @@ export function getWebviewContent(initialState: any): string {
           </div>
         </div>
       </div>
-      <div id="responseContainer" style="display: none;">
-          <div id="responseBox" class="response-container">
+      <div id="responseContainer">
+          <div id="responseBox" class="response-container is-empty">
             <div id="responseHeader" class="response-header">
               <div class="response-status">
                 <span id="responseStatus"></span>
@@ -1976,6 +2086,13 @@ export function getWebviewContent(initialState: any): string {
                     <div class="response-search">
                       <span class="material-icons">search</span>
                       <input type="text" id="responseSearch" placeholder="Search in response...">
+                      <span id="searchCount" class="search-count"></span>
+                      <button id="searchPrev" class="search-nav-btn" title="Previous match (Shift+Enter)">
+                        <span class="material-icons">keyboard_arrow_up</span>
+                      </button>
+                      <button id="searchNext" class="search-nav-btn" title="Next match (Enter)">
+                        <span class="material-icons">keyboard_arrow_down</span>
+                      </button>
                     </div>
                     <div class="response-options">
                       <button class="response-option-btn active" data-format="pretty">
@@ -1992,7 +2109,11 @@ export function getWebviewContent(initialState: any): string {
                 </button>
               </div>
             </div>
-            <div id="responseBody" class="response-body"></div>
+            <div id="responseBody" class="response-body"><div class="response-empty">
+              <span class="material-icons">cloud_download</span>
+              <div class="response-empty-title">No response yet</div>
+              <div class="response-empty-hint">Send a request to see the response here.</div>
+            </div></div>
           </div>
 
                 <!-- Response Headers Section -->
@@ -2639,59 +2760,141 @@ export function getWebviewContent(initialState: any): string {
           set('totalTime', timing.total != null ? timing.total : responseTime);
         }
 
-        function setupResponseSearch() {
-          const searchInput = document.getElementById('responseSearch');
-          searchInput.addEventListener('input', (e) => {
-            const query = e.target.value;
-            const responseBody = document.getElementById('responseBody');
-            const rawData = responseBody.dataset.rawData;
+        // Index of the currently focused search match.
+        let searchCurrentIndex = 0;
 
-            // Empty query: restore the original formatted (collapsible) view.
-            if (!query) {
-              if (rawData) {
-                try {
-                  displayResponseData(JSON.parse(rawData), 'pretty');
-                } catch (e) {
-                  responseBody.textContent = rawData;
-                }
-              }
-              return;
-            }
+        function runResponseSearch(query) {
+          const responseBody = document.getElementById('responseBody');
+          const countEl = document.getElementById('searchCount');
+          const prevBtn = document.getElementById('searchPrev');
+          const nextBtn = document.getElementById('searchNext');
+          const rawData = responseBody.dataset.rawData;
 
-            // Build a plain-text representation of the response to search within.
-            let plainText;
+          const setNavDisabled = (disabled) => {
+            if (prevBtn) prevBtn.disabled = disabled;
+            if (nextBtn) nextBtn.disabled = disabled;
+          };
+
+          // Empty query: restore the original formatted (collapsible) view.
+          if (!query) {
             if (rawData) {
               try {
-                plainText = JSON.stringify(JSON.parse(rawData), null, 2);
+                displayResponseData(JSON.parse(rawData), 'pretty');
               } catch (e) {
-                plainText = rawData;
+                responseBody.textContent = rawData;
               }
-            } else {
-              plainText = responseBody.textContent;
             }
+            if (countEl) countEl.textContent = '';
+            setNavDisabled(true);
+            return;
+          }
 
-            const lowerText = plainText.toLowerCase();
-            const lowerQuery = query.toLowerCase();
-            let startIndex = 0;
-            let result = '';
-
-            // Escape every text segment before inserting into innerHTML so JSON
-            // containing <, >, & (or markup) cannot break the layout or inject.
-            while (true) {
-              const index = lowerText.indexOf(lowerQuery, startIndex);
-              if (index === -1) {
-                result += escapeHtml(plainText.substring(startIndex));
-                break;
-              }
-              result += escapeHtml(plainText.substring(startIndex, index));
-              result += '<mark style="background: #ffd54f; color: #000;">'
-                + escapeHtml(plainText.substring(index, index + query.length))
-                + '</mark>';
-              startIndex = index + query.length;
+          // Build a plain-text representation of the response to search within.
+          let plainText;
+          if (rawData) {
+            try {
+              plainText = JSON.stringify(JSON.parse(rawData), null, 2);
+            } catch (e) {
+              plainText = rawData;
             }
+          } else {
+            plainText = responseBody.textContent;
+          }
 
-            responseBody.innerHTML = result;
+          const lowerText = plainText.toLowerCase();
+          const lowerQuery = query.toLowerCase();
+          let startIndex = 0;
+          let result = '';
+          let matchCount = 0;
+
+          // Escape every text segment before inserting into innerHTML so JSON
+          // containing <, >, & (or markup) cannot break the layout or inject.
+          while (true) {
+            const index = lowerText.indexOf(lowerQuery, startIndex);
+            if (index === -1) {
+              result += escapeHtml(plainText.substring(startIndex));
+              break;
+            }
+            result += escapeHtml(plainText.substring(startIndex, index));
+            result += '<mark class="search-highlight" data-match="' + matchCount + '">'
+              + escapeHtml(plainText.substring(index, index + query.length))
+              + '</mark>';
+            matchCount++;
+            startIndex = index + query.length;
+          }
+
+          responseBody.innerHTML = result;
+
+          if (matchCount === 0) {
+            if (countEl) countEl.textContent = '0/0';
+            setNavDisabled(true);
+            return;
+          }
+
+          setNavDisabled(false);
+          if (searchCurrentIndex >= matchCount) searchCurrentIndex = 0;
+          if (searchCurrentIndex < 0) searchCurrentIndex = matchCount - 1;
+          focusSearchMatch(searchCurrentIndex, matchCount);
+        }
+
+        function focusSearchMatch(index, total) {
+          const responseBody = document.getElementById('responseBody');
+          const countEl = document.getElementById('searchCount');
+          const marks = responseBody.querySelectorAll('mark.search-highlight');
+          if (!marks.length) return;
+          if (index < 0) index = marks.length - 1;
+          if (index >= marks.length) index = 0;
+          searchCurrentIndex = index;
+
+          marks.forEach(m => m.classList.remove('current'));
+          const active = marks[index];
+          active.classList.add('current');
+          active.scrollIntoView({ block: 'center' });
+          if (countEl) countEl.textContent = (index + 1) + '/' + (total || marks.length);
+        }
+
+        function gotoSearchMatch(delta) {
+          const responseBody = document.getElementById('responseBody');
+          const marks = responseBody.querySelectorAll('mark.search-highlight');
+          if (!marks.length) return;
+          focusSearchMatch(searchCurrentIndex + delta, marks.length);
+        }
+
+        // Clear the search box and match counter (called when a fresh response arrives).
+        function resetResponseSearch() {
+          const input = document.getElementById('responseSearch');
+          const countEl = document.getElementById('searchCount');
+          const prevBtn = document.getElementById('searchPrev');
+          const nextBtn = document.getElementById('searchNext');
+          if (input) input.value = '';
+          if (countEl) countEl.textContent = '';
+          searchCurrentIndex = 0;
+          if (prevBtn) prevBtn.disabled = true;
+          if (nextBtn) nextBtn.disabled = true;
+        }
+
+        function setupResponseSearch() {
+          const searchInput = document.getElementById('responseSearch');
+          const prevBtn = document.getElementById('searchPrev');
+          const nextBtn = document.getElementById('searchNext');
+
+          searchInput.addEventListener('input', (e) => {
+            searchCurrentIndex = 0;
+            runResponseSearch(e.target.value);
           });
+
+          // Enter jumps to the next match, Shift+Enter to the previous.
+          searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              gotoSearchMatch(e.shiftKey ? -1 : 1);
+            }
+          });
+
+          if (prevBtn) prevBtn.addEventListener('click', () => gotoSearchMatch(-1));
+          if (nextBtn) nextBtn.addEventListener('click', () => gotoSearchMatch(1));
+          if (prevBtn) prevBtn.disabled = true;
+          if (nextBtn) nextBtn.disabled = true;
         }
 
         function collectParamsArray(containerId) {
@@ -3038,6 +3241,17 @@ export function getWebviewContent(initialState: any): string {
             });
         }
 
+        // Build a colored status pill for a response status code.
+        function statusPillHtml(status, statusText) {
+          let cls = 'success';
+          if (status >= 500 || status === null || status === undefined) cls = 'error';
+          else if (status >= 400) cls = 'warning';
+          else if (status >= 300) cls = 'redirect';
+          const code = (status === null || status === undefined) ? 'Error' : status;
+          const text = statusText ? '<span class="status-text">' + escapeHtml(String(statusText)) + '</span>' : '';
+          return '<span class="status-pill ' + cls + '"><span class="status-dot"></span>' + escapeHtml(String(code)) + '</span>' + text;
+        }
+
         function showResponse(data, status, statusText, responseTime, headers = {}, isLargeResponse = false, sizeInMB = 0, tempFilePath = '', timing = null) {
           console.log('showResponse called with:', { data, status, statusText, responseTime, headers, isLargeResponse, sizeInMB, tempFilePath });
           
@@ -3051,22 +3265,17 @@ export function getWebviewContent(initialState: any): string {
 
           responseContainer.style.display = 'block';
           
-          let statusIcon = '✅';
           let statusClass = 'response-success';
-          
           if (status >= 500) {
-            statusIcon = '❌';
             statusClass = 'response-error';
           } else if (status >= 400) {
-            statusIcon = '⚠️';
             statusClass = 'response-warning';
           } else if (status >= 300) {
-            statusIcon = '↩️';
             statusClass = 'response-warning';
           }
-          
+
           responseBox.className = 'response-container ' + statusClass;
-          responseStatus.innerHTML = statusIcon + ' <strong>' + status + '</strong> - ' + statusText;
+          responseStatus.innerHTML = statusPillHtml(status, statusText);
 
   // Clear any existing large response warning
   const existingWarning = document.getElementById('large-response-warning');
@@ -3138,6 +3347,7 @@ export function getWebviewContent(initialState: any): string {
   }
 
   // Display response data in body tab
+  resetResponseSearch();
   displayResponseData(data, 'pretty');
 
   // Display headers
@@ -3170,20 +3380,20 @@ function showError(message, data, headers = {}, status = null, statusText = null
   responseBox.className = 'response-container response-error';
   
   if (status) {
-    responseStatus.innerHTML = '❌ <strong>' + status + '</strong> - ' + (statusText || 'Error');
+    responseStatus.innerHTML = statusPillHtml(status, statusText || 'Error');
   } else {
     // Try to parse status code from message like "HTTP 400 - Bad Request"
     if (message && message.indexOf('HTTP ') === 0) {
       var dashIdx = message.indexOf(' - ');
       if (dashIdx > 0) {
-        var codeStr = message.substring(5, dashIdx);
+        var codeStr = parseInt(message.substring(5, dashIdx), 10);
         var textStr = message.substring(dashIdx + 3);
-        responseStatus.innerHTML = '❌ <strong>' + codeStr + '</strong> - ' + textStr;
+        responseStatus.innerHTML = statusPillHtml(isNaN(codeStr) ? null : codeStr, textStr);
       } else {
-        responseStatus.innerHTML = '❌ <strong>' + message + '</strong>';
+        responseStatus.innerHTML = statusPillHtml(null, message);
       }
     } else {
-      responseStatus.innerHTML = '❌ <strong>' + (message || 'Error') + '</strong>';
+      responseStatus.innerHTML = statusPillHtml(null, message || 'Error');
     }
   }
           
